@@ -97,7 +97,15 @@ export default function App() {
               initial={{ y: "-100%" }}
               animate={{ y: 0 }}
               exit={{ y: "-100%" }}
-              transition={{ type: "tween", ease: "easeOut", duration: 0.3 }}
+              transition={{
+                type: "tween",
+                ease: [0.16, 1, 0.3, 1], // Custom "Premium" Cubic Bezier
+                duration: 0.4
+              }}
+              style={{
+                transform: "translateZ(0)", // Force 3D Layer
+                backfaceVisibility: "hidden"
+              }}
               className="fixed inset-0 z-40 bg-black text-[#dfff00] pt-32 px-8 flex flex-col gap-8 text-5xl md:text-8xl uppercase tracking-tighter font-black overflow-y-auto pb-12 will-change-transform"
             >
               <a href="#gallery" onClick={() => setIsMenuOpen(false)} className="hover:text-[#ff00ff] transition-colors flex items-center gap-6 py-4 border-b-4 border-[#dfff00]/20 hover:border-[#ff00ff] hover:pl-8">
