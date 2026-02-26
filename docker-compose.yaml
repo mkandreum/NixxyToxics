@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  nixxy-app:
+    build: .
+    container_name: nixxy_toxic
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-toxicadmin}
+      - JWT_SECRET=${JWT_SECRET:-9d8f37a2c1b4e5f6a9b8c7d6e5f4a3b21c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f}
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+    labels:
+      - "coolify.managed=true"
+      - "traefik.enable=true"
+      - "traefik.http.routers.nixxy-tox.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.nixxy-tox.entrypoints=https"
+      - "traefik.http.routers.nixxy-tox.tls=true"
+      - "traefik.http.services.nixxy-tox.loadbalancer.server.port=3000"
+
+volumes:
+  data:
+    driver: local
+  uploads:
+    driver: local

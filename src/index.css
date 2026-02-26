@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Shrikhand&family=VT323&family=Sedgwick+Ave+Display&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-mono: "VT323", monospace;
+  --font-logo: "Motter Ombra", "Shrikhand", system-ui;
+  --font-signature: "Sedgwick Ave Display", cursive;
+  --color-neon-yellow: #dfff00;
+  --color-neon-pink: #ff00ff;
+  --color-neon-green: #00ff00;
+}
+
+body {
+  background-color: var(--color-neon-yellow);
+  color: black;
+  font-family: var(--font-mono);
+  font-weight: bold;
+  overflow-x: hidden;
+}
+
+html {
+  scroll-behavior: smooth;
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.neon-glow-pink {
+  text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff;
+}
+
+.neon-glow-green {
+  text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00;
+}
+
+.toxic-shadow {
+  text-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 5px 15px rgba(0, 0, 0, 0.4);
+}
+
+.signature-toxic {
+  color: #ff00ff;
+  -webkit-text-stroke: 4px black;
+  paint-order: stroke fill;
+  text-shadow:
+    0 0 10px #ff00ff,
+    0 0 20px #ff00ff,
+    10px 10px 0px rgba(0, 0, 0, 1);
+}
+
+.glitch-text {
+  text-shadow: 2px 0 0 red, -2px 0 0 cyan;
+}
+
+/* Hide scrollbar for a cleaner look */
+::-webkit-scrollbar {
+  display: none;
+}
+
+.animate-spin-slow {
+  animation: spin 20s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
