@@ -49,8 +49,8 @@ export default function App() {
 
         {/* Navigation - Floating Pill */}
         <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[85vw] md:w-fit md:max-w-[90vw] z-50 border-2 md:border-4 border-black rounded-full bg-[#dfff00]/10 backdrop-blur-[1px] flex items-center justify-between overflow-hidden px-5 py-2 md:px-10 md:py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-          <a href="#gallery" className="text-base sm:text-2xl md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff]">Gallery</a>
-          <a href="#events" className="text-base sm:text-2xl md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff]">Shows</a>
+          <a href="#gallery" className="text-lg sm:text-2xl md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff]">📸 Gallery</a>
+          <a href="#events" className="text-lg sm:text-2xl md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff]">🎤 Shows</a>
 
           <a
             href="#"
@@ -72,7 +72,7 @@ export default function App() {
             )}
           </a>
 
-          <a href="#store" className="text-base sm:text-2xl md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff]">Store</a>
+          <a href="#store" className="text-lg sm:text-2xl md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff]">🛒 Store</a>
 
           <button
             onClick={handleMenuClick}
