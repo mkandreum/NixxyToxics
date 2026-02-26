@@ -49,9 +49,9 @@ export default function App() {
 
         {/* Navigation - Floating Pill */}
         {currentView === 'home' && (
-          <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[92vw] md:w-fit md:max-w-[90vw] z-50 border-2 md:border-4 border-black rounded-full bg-[#d9ff36]/15 backdrop-blur-md flex items-center justify-center gap-x-1 sm:gap-x-2 md:gap-x-0 px-2 md:px-10 py-1 md:py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-            <a href="#gallery" className="flex flex-col items-center md:flex-row md:gap-2 text-[9px] sm:text-base md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff] leading-none"><span className="text-lg sm:text-xl md:text-3xl">📸</span><span>Gallery</span></a>
-            <a href="#events" className="flex flex-col items-center md:flex-row md:gap-2 text-[9px] sm:text-base md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff] leading-none"><span className="text-lg sm:text-xl md:text-3xl">🎤</span><span>Shows</span></a>
+          <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[95vw] md:w-fit md:max-w-[90vw] z-50 border-2 md:border-4 border-black rounded-full bg-[#d9ff36]/15 backdrop-blur-md flex items-center justify-between px-6 md:px-10 py-1 md:py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <a href="#gallery" className="flex flex-col items-center md:flex-row md:gap-2 text-[10px] sm:text-base md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff] leading-none"><span className="text-xl sm:text-xl md:text-3xl">📸</span><span>Gallery</span></a>
+            <a href="#events" className="flex flex-col items-center md:flex-row md:gap-2 text-[10px] sm:text-base md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff] leading-none"><span className="text-xl sm:text-xl md:text-3xl">🎤</span><span>Shows</span></a>
 
             <a
               href="#"
@@ -73,11 +73,11 @@ export default function App() {
               )}
             </a>
 
-            <a href="#store" className="flex flex-col items-center md:flex-row md:gap-2 text-[9px] sm:text-base md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff] leading-none"><span className="text-lg sm:text-xl md:text-3xl">🛒</span><span>Store</span></a>
+            <a href="#store" className="flex flex-col items-center md:flex-row md:gap-2 text-[10px] sm:text-base md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff] leading-none"><span className="text-xl sm:text-xl md:text-3xl">🛒</span><span>Store</span></a>
 
             <button
               onClick={handleMenuClick}
-              className="w-7 h-4 sm:w-10 sm:h-6 flex-shrink-0 cursor-pointer group flex flex-col justify-between ml-1"
+              className="w-7 h-4 sm:w-10 sm:h-6 flex-shrink-0 cursor-pointer group flex flex-col justify-between"
               aria-label="Menu"
             >
               <motion.span
