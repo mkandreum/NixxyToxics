@@ -39,13 +39,18 @@ const authenticate = (req: any, res: any, next: any) => {
     }
 };
 
-// Static files with aggressive caching for performance
+// Static files - hashed assets get long cache, HTML always revalidates
 const distPath = path.join(__dirname, '../dist');
 app.use(express.static(distPath, {
-    maxAge: '1d',
-    setHeaders: (res, path) => {
-        if (path.match(/\.(js|css|woff2|webp|png|jpg|mp4)$/)) {
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+            // HTML must always revalidate so new builds are picked up immediately
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        } else if (filePath.includes('/assets/')) {
+            // Vite hashed assets can be cached forever (filename changes on rebuild)
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        } else {
+            res.setHeader('Cache-Control', 'public, max-age=86400');
         }
     }
 }));
@@ -295,8 +300,9 @@ app.put('/api/banners/:id', authenticate, (req, res) => {
     res.sendStatus(200);
 });
 
-// Handle React routing
+// Handle React routing - never cache the SPA entry point
 app.get('*', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(distPath, 'index.html'));
 });
 

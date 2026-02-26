@@ -34,8 +34,26 @@ export default defineConfig(({ mode }) => {
           ]
         },
         workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,mp4}'],
+          // Don't precache heavy assets - let runtime caching handle them
+          globPatterns: ['**/*.{html,ico}'],
+          // Activate new SW immediately without waiting
+          skipWaiting: true,
+          clientsClaim: true,
+          // Clean old caches on update
+          cleanupOutdatedCaches: true,
           runtimeCaching: [
+            {
+              // JS & CSS - always check network first so new deploys are instant
+              urlPattern: /\.(?:js|css)$/,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'static-assets',
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 60 * 60 * 24 * 7
+                }
+              }
+            },
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
               handler: 'CacheFirst',
@@ -51,13 +69,6 @@ export default defineConfig(({ mode }) => {
               }
             },
             {
-              urlPattern: /\/api\/settings/,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'settings-cache'
-              }
-            },
-            {
               urlPattern: /\/api\/.*/,
               handler: 'NetworkFirst',
               options: {
@@ -70,7 +81,7 @@ export default defineConfig(({ mode }) => {
             },
             {
               urlPattern: /\/uploads\/.*/,
-              handler: 'CacheFirst',
+              handler: 'NetworkFirst',
               options: {
                 cacheName: 'uploads-cache',
                 expiration: {
