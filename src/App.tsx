@@ -48,7 +48,7 @@ export default function App() {
         <Banners />
 
         {/* Navigation - Floating Pill */}
-        <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[85vw] md:w-fit md:max-w-[90vw] z-50 border-2 md:border-4 border-black rounded-full bg-[#dfff00]/10 backdrop-blur-[1px] flex items-center justify-between overflow-hidden px-5 py-2 md:px-10 md:py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] gap-2 md:gap-6">
+        <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[92vw] md:w-fit md:max-w-[90vw] z-50 border-2 md:border-4 border-black rounded-full bg-[#dfff00]/10 backdrop-blur-[1px] flex items-center justify-between overflow-hidden px-4 py-2 md:px-10 md:py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] gap-4 md:gap-8">
           <a href="#gallery" className="flex flex-col items-center md:flex-row md:gap-2 text-base sm:text-lg md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff] leading-tight flex-shrink-0"><span className="text-xl sm:text-2xl md:text-3xl">📸</span><span>Gallery</span></a>
           <a href="#events" className="flex flex-col items-center md:flex-row md:gap-2 text-base sm:text-lg md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff] leading-tight flex-shrink-0"><span className="text-xl sm:text-2xl md:text-3xl">🎤</span><span>Shows</span></a>
 
@@ -59,7 +59,7 @@ export default function App() {
               setCurrentView('home');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            className="mx-4 md:mx-12 select-none flex items-center justify-center flex-shrink-0 hover:scale-105 transition-transform"
+            className="mx-6 md:mx-12 select-none flex items-center justify-center flex-shrink-0 hover:scale-105 transition-transform"
           >
             {siteSettings.site_logo_url ? (
               <img src={siteSettings.site_logo_url} alt="Logo" className="h-16 sm:h-20 md:h-28 w-auto object-contain drop-shadow-[4px_4px_0px_rgba(0,0,0,1)]" />
