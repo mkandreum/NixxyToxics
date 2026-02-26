@@ -154,12 +154,21 @@ export default function App() {
           )}
 
           {currentView === 'admin' && (
-            <AdminDashboard onLogout={() => setCurrentView('home')} />
+            <AdminDashboard onLogout={() => {
+              setCurrentView('home');
+              window.scrollTo(0, 0);
+            }} />
           )}
         </main>
 
         <footer className="border-t-4 border-black bg-black text-[#dfff00] p-12 md:p-24 text-center flex flex-col items-center gap-8">
-          <h2 className="text-6xl md:text-9xl font-logo text-[#dfff00]">Nixxy Toxic</h2>
+          {siteSettings.site_logo_url ? (
+            <img src={siteSettings.site_logo_url} alt="Logo" className="h-24 md:h-48 w-auto object-contain brightness-0 invert" />
+          ) : (
+            <h2 className="text-6xl md:text-9xl font-logo text-[#dfff00]">
+              {siteSettings.site_logo_text}
+            </h2>
+          )}
           <p className="text-2xl md:text-4xl uppercase">© {new Date().getFullYear()} All rights reserved, Bitch!</p>
         </footer>
       </div>

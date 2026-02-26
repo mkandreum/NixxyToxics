@@ -205,30 +205,33 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
             />
 
             {/* Mobile Header */}
-            <header className="md:hidden sticky top-0 z-[110] bg-[#dfff00] border-b-4 border-black p-4 flex justify-between items-center">
+            <header className="md:hidden sticky top-0 z-[150] bg-[#dfff00] border-b-4 border-black p-4 flex justify-between items-center shadow-[0px_4px_10px_rgba(0,0,0,0.1)]">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 border-2 border-black bg-white shadow-[2px_2px_0px_0px_black]">
+                    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 border-2 border-black bg-white shadow-[2px_2px_0px_0px_black] active:translate-y-0.5 active:shadow-none transition-all">
                         {isMobileMenuOpen ? <X size={24} /> : <LayoutDashboard size={24} />}
                     </button>
                     <span className="font-black uppercase tracking-tighter text-xl">
                         {tabs.find(t => t.id === activeTab)?.label}
                     </span>
                 </div>
-                <button onClick={onLogout} className="p-2 border-2 border-black bg-white shadow-[2px_2px_0px_0px_black]">
+                <button onClick={logout} className="p-2 border-2 border-black bg-white shadow-[2px_2px_0px_0px_black] active:translate-y-0.5 active:shadow-none transition-all">
                     <LogOut size={24} />
                 </button>
             </header>
 
             {/* Sidebar (Mobile Drawer / Desktop Static) */}
             <aside className={`
-                fixed inset-0 z-[105] bg-[#dfff00] transform transition-transform duration-300 md:relative md:translate-x-0 md:z-0
+                fixed inset-y-0 left-0 z-[140] bg-[#dfff00] transform transition-transform duration-300 md:relative md:translate-x-0 md:z-0
                 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-                w-full md:w-80 border-r-4 border-black flex flex-col
+                w-[80%] md:w-80 border-r-4 border-black flex flex-col shadow-[10px_0px_30px_rgba(0,0,0,0.2)] md:shadow-none
             `}>
                 <div className="p-8 border-b-4 border-black hidden md:block">
                     <h1 className="text-4xl font-logo uppercase leading-none">Toxic<br />Panel</h1>
                 </div>
-                <nav className="flex-1 p-4 flex flex-col gap-2 overflow-y-auto mt-16 md:mt-0">
+                <nav className="flex-1 p-4 flex flex-col gap-2 overflow-y-auto pt-24 md:pt-4">
+                    <div className="md:hidden mb-8 border-b-2 border-black pb-4">
+                        <h2 className="text-2xl font-black uppercase italic">Admin Menu</h2>
+                    </div>
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}

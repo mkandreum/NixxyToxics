@@ -60,17 +60,24 @@ export default function Gallery() {
             photos.map((src, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 100 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.5, delay: Math.min(i * 0.05, 0.2), ease: [0.16, 1, 0.3, 1] }}
-                className={`border-4 border-black p-3 bg-white transform transition-transform duration-300 hover:z-10 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] ${i % 2 === 0 ? 'md:translate-y-12' : ''}`}
+                initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{
+                  duration: 0.4,
+                  delay: (i % 3) * 0.1, // Better stagger logic for grid
+                  ease: [0.215, 0.61, 0.355, 1] // Out-Cubic for snappy entrance
+                }}
+                className={`border-4 border-black p-3 bg-white transform hover:z-10 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] transition-shadow duration-300 ${i % 2 === 0 ? 'md:translate-y-8' : ''}`}
               >
-                <div className="overflow-hidden border-2 border-black">
+                <div className="overflow-hidden border-2 border-black bg-gray-50 aspect-[4/5] md:aspect-auto">
                   <img
                     src={src}
                     alt={`Nixxy Toxic ${i}`}
-                    className="w-full h-auto object-cover hover:scale-110 transition-all duration-500"
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                    loading="lazy"
+                    onLoad={(e) => (e.currentTarget.style.opacity = "1")}
+                    style={{ opacity: 0, transition: "opacity 0.5s" }}
                     referrerPolicy="no-referrer"
                   />
                 </div>
