@@ -63,7 +63,7 @@ export default function Gallery() {
                 initial={{ opacity: 0, y: 100 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.4, delay: Math.min(i * 0.1, 0.3), ease: "easeOut" }}
+                transition={{ duration: 0.5, delay: Math.min(i * 0.05, 0.2), ease: [0.16, 1, 0.3, 1] }}
                 className={`border-4 border-black p-3 bg-white transform transition-transform duration-300 hover:z-10 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] ${i % 2 === 0 ? 'md:translate-y-12' : ''}`}
               >
                 <div className="overflow-hidden border-2 border-black">

@@ -23,6 +23,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const [toasts, setToasts] = useState<Toast[]>([]);
 
     const showToast = (message: string, type: ToastType) => {
+        // If we show a success/error, let's clear all previous "loading" toasts to avoid clutter
+        if (type !== 'loading') {
+            setToasts(prev => prev.filter(t => t.type !== 'loading'));
+        }
+
         const id = Math.random().toString(36).substring(2, 9);
         setToasts(prev => [...prev, { id, message, type, progress: type === 'loading' ? 0 : undefined }]);
 
@@ -61,11 +66,21 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                             </div>
 
                             {toast.type === 'loading' && (
-                                <div className="w-full h-4 bg-gray-200 border-2 border-black overflow-hidden mt-1">
+                                <div className="w-full h-4 bg-gray-200 border-2 border-black overflow-hidden mt-1 relative">
                                     <motion.div
                                         className="h-full bg-[#dfff00]"
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${toast.progress ?? 0}%` }}
+                                        initial={{ width: "30%" }}
+                                        animate={toast.progress === 0 ? {
+                                            x: ["-100%", "350%"],
+                                        } : {
+                                            width: `${toast.progress}%`,
+                                            x: 0
+                                        }}
+                                        transition={toast.progress === 0 ? {
+                                            repeat: Infinity,
+                                            duration: 1.5,
+                                            ease: "linear"
+                                        } : { duration: 0.3 }}
                                     />
                                 </div>
                             )}

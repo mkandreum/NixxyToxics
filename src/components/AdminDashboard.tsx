@@ -93,6 +93,7 @@ function CustomModal({ isOpen, onClose, title, onConfirm, fields, confirmText = 
 
 export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
     const [activeTab, setActiveTab] = useState<'stats' | 'gallery' | 'events' | 'banners' | 'store' | 'orders' | 'smtp' | 'settings'>('stats');
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [data, setData] = useState<any>({ gallery: [], events: [], settings: {}, banners: [], products: [], orders: [], smtp: {} });
     const { showToast, hideToast } = useToast();
 
@@ -203,17 +204,40 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 confirmText={modalConfig.type === 'confirm' ? "DO IT!" : "SAVE"}
             />
 
-            <aside className="w-full md:w-80 border-r-4 border-black flex flex-col bg-[#dfff00]">
-                <div className="p-8 border-b-4 border-black">
+            {/* Mobile Header */}
+            <header className="md:hidden sticky top-0 z-[110] bg-[#dfff00] border-b-4 border-black p-4 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 border-2 border-black bg-white shadow-[2px_2px_0px_0px_black]">
+                        {isMobileMenuOpen ? <X size={24} /> : <LayoutDashboard size={24} />}
+                    </button>
+                    <span className="font-black uppercase tracking-tighter text-xl">
+                        {tabs.find(t => t.id === activeTab)?.label}
+                    </span>
+                </div>
+                <button onClick={onLogout} className="p-2 border-2 border-black bg-white shadow-[2px_2px_0px_0px_black]">
+                    <LogOut size={24} />
+                </button>
+            </header>
+
+            {/* Sidebar (Mobile Drawer / Desktop Static) */}
+            <aside className={`
+                fixed inset-0 z-[105] bg-[#dfff00] transform transition-transform duration-300 md:relative md:translate-x-0 md:z-0
+                ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+                w-full md:w-80 border-r-4 border-black flex flex-col
+            `}>
+                <div className="p-8 border-b-4 border-black hidden md:block">
                     <h1 className="text-4xl font-logo uppercase leading-none">Toxic<br />Panel</h1>
                 </div>
-                <nav className="flex-1 p-4 flex flex-col gap-2">
+                <nav className="flex-1 p-4 flex flex-col gap-2 overflow-y-auto mt-16 md:mt-0">
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
+                            onClick={() => {
+                                setActiveTab(tab.id as any);
+                                setIsMobileMenuOpen(false);
+                            }}
                             className={`flex items-center gap-4 p-4 text-xl uppercase font-black border-4 transition-all ${activeTab === tab.id
-                                ? 'bg-black text-[#dfff00] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+                                ? 'bg-black text-[#dfff00] border-black shadow-[4px_4px_0px_0px_black]'
                                 : 'border-transparent hover:border-black/20'
                                 }`}
                         >
@@ -224,7 +248,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 </nav>
                 <button
                     onClick={logout}
-                    className="p-8 border-t-4 border-black flex items-center gap-4 text-2xl uppercase font-black hover:bg-black hover:text-white transition-colors"
+                    className="p-8 border-t-4 border-black flex items-center gap-4 text-2xl uppercase font-black hover:bg-black hover:text-[#dfff00] transition-colors md:flex hidden"
                 >
                     <LogOut size={24} /> Logout
                 </button>
