@@ -233,8 +233,8 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
             {/* Sidebar (Mobile Drawer / Desktop Static) */}
             <aside className={`
                 fixed inset-y-0 left-0 z-[200] bg-[#d9ff36] transform transition-transform duration-300 md:relative md:translate-x-0 md:z-0
-                ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-                w-[85%] md:w-80 border-r-4 border-black flex flex-col shadow-[10px_0px_40px_rgba(0,0,0,0.5)] md:shadow-none
+                ${isMobileMenuOpen ? 'translate-x-0 shadow-[20px_0px_60px_rgba(0,0,0,0.5)]' : '-translate-x-full md:translate-x-0'}
+                w-[85%] md:w-80 border-r-4 border-black flex flex-col md:shadow-none
             `}>
                 <div className="p-8 border-b-4 border-black flex justify-between items-center bg-black text-[#d9ff36]">
                     <h1 className="text-3xl md:text-4xl font-logo uppercase leading-none">Toxic<br className="hidden md:block" /> Panel</h1>
@@ -269,13 +269,13 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 </button>
             </aside>
 
-            <main className="flex-1 p-6 md:p-12 overflow-y-auto">
-                <header className="mb-12 flex justify-between items-end border-b-4 border-black pb-8">
+            <main className="flex-1 p-4 md:p-12 overflow-y-auto pt-8 md:pt-12">
+                <header className="mb-6 md:mb-12 flex justify-between items-end border-b-4 border-black pb-4 md:pb-8">
                     <div>
-                        <h2 className="text-6xl uppercase font-black tracking-tighter">
+                        <h2 className="text-4xl md:text-6xl uppercase font-black tracking-tighter">
                             {tabs.find(t => t.id === activeTab)?.label}
                         </h2>
-                        <p className="text-xl uppercase opacity-50">Manage your toxic empire</p>
+                        <p className="text-sm md:text-xl uppercase opacity-50">Manage your toxic empire</p>
                     </div>
                     {['gallery', 'events', 'banners', 'store'].includes(activeTab) && (
                         <button

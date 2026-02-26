@@ -34,7 +34,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#d9ff36] p-4 font-mono">
+        <div className="min-h-screen flex items-start md:items-center justify-center bg-[#d9ff36] p-4 pt-12 md:pt-4 font-mono">
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}

@@ -49,7 +49,7 @@ export default function App() {
 
         {/* Navigation - Floating Pill */}
         {currentView === 'home' && (
-          <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[85vw] md:w-fit md:max-w-[90vw] z-50 border-2 md:border-4 border-black rounded-full bg-[#d9ff36]/10 backdrop-blur-[1px] flex items-center justify-between overflow-hidden px-5 py-2 md:px-10 md:py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[85vw] md:w-fit md:max-w-[90vw] z-50 border-2 md:border-4 border-black rounded-full bg-[#d9ff36]/10 backdrop-blur-[1px] flex items-center justify-between gap-x-2 md:gap-x-0 overflow-hidden px-5 py-2 md:px-10 md:py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             <a href="#gallery" className="flex flex-col items-center md:flex-row md:gap-2 text-base sm:text-lg md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff] leading-tight"><span className="text-xl sm:text-2xl md:text-3xl">📸</span><span>Gallery</span></a>
             <a href="#events" className="flex flex-col items-center md:flex-row md:gap-2 text-base sm:text-lg md:text-3xl uppercase hover:glitch-text transition-all font-mono font-black hover:text-[#ff00ff] leading-tight"><span className="text-xl sm:text-2xl md:text-3xl">🎤</span><span>Shows</span></a>
 
