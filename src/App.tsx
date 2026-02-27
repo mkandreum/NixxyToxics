@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Menu, X, Image as ImageIcon, Calendar, ShoppingCart } from "lucide-react";
+import { X, Image as ImageIcon, Calendar, ShoppingCart } from "lucide-react";
 
 // Components
 import Hero from "./components/Hero";
@@ -14,6 +14,7 @@ import Banners from "./components/Banners";
 import { ToastProvider } from "./components/Toast";
 
 export default function App() {
+  console.log("🔥 Full App Rendering...");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuClicks, setMenuClicks] = useState(0);
   const [currentView, setCurrentView] = useState<'home' | 'login' | 'admin'>('home');
@@ -23,8 +24,8 @@ export default function App() {
     fetch('/api/settings')
       .then(res => res.json())
       .then(data => {
-        if (data) {
-          setSiteSettings(data);
+        if (data && typeof data === 'object') {
+          setSiteSettings((prev: any) => ({ ...prev, ...data }));
         }
       })
       .catch(err => console.error("Error fetching settings:", err));
@@ -68,11 +69,11 @@ export default function App() {
               }}
               className="mx-2 select-none flex items-center justify-center flex-shrink-0 hover:scale-105 transition-transform"
             >
-              {siteSettings.site_logo_url ? (
+              {siteSettings?.site_logo_url ? (
                 <img src={siteSettings.site_logo_url} alt="Logo" className="h-10 md:h-16 w-auto object-contain drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]" />
               ) : (
                 <span className="text-xl md:text-4xl font-logo leading-none text-center flex flex-col uppercase px-2">
-                  {(siteSettings.site_logo_text || 'Nixxy Toxic').split(' ').map((word: string, i: number) => (
+                  {(siteSettings?.site_logo_text || 'Nixxy Toxic').split(' ').map((word: string, i: number) => (
                     <span key={i} className={i % 2 === 0 ? "text-black" : "text-[#ff00ff]"}>{word}</span>
                   ))}
                 </span>
@@ -86,16 +87,16 @@ export default function App() {
 
             <button
               onClick={handleMenuClick}
-              className="w-7 h-4 sm:w-10 sm:h-6 flex-shrink-0 cursor-pointer group flex flex-col justify-between"
+              className="w-8 h-8 flex flex-col justify-around items-center p-1 group"
               aria-label="Menu"
             >
               <motion.span
                 animate={isMenuOpen ? { rotate: 45, y: 7 } : { rotate: 0, y: 0 }}
-                className="w-full h-[2.5px] sm:h-[4px] bg-black block origin-center group-hover:bg-[#ff00ff]"
+                className="w-6 h-1 bg-black block group-hover:bg-[#ff00ff]"
               />
               <motion.span
                 animate={isMenuOpen ? { rotate: -45, y: -7 } : { rotate: 0, y: 0 }}
-                className="w-full h-[2.5px] sm:h-[4px] bg-black block origin-center group-hover:bg-[#ff00ff]"
+                className="w-6 h-1 bg-black block group-hover:bg-[#ff00ff]"
               />
             </button>
           </nav>
@@ -113,8 +114,7 @@ export default function App() {
                 ease: [0.16, 1, 0.3, 1],
                 duration: 0.5,
               }}
-              style={{ transform: "translateZ(0)", backfaceVisibility: "hidden" }}
-              className="fixed inset-0 z-40 bg-black text-[#d9ff36] pt-32 px-8 flex flex-col gap-8 text-5xl md:text-8xl uppercase tracking-tighter font-black overflow-y-auto pb-12 will-change-transform"
+              className="fixed inset-0 z-40 bg-black text-[#d9ff36] pt-32 px-8 flex flex-col gap-8 text-5xl md:text-8xl uppercase tracking-tighter font-black overflow-y-auto pb-12"
             >
               {[
                 { href: "#gallery", label: "Gallery", icon: ImageIcon, color: "hover:text-[#ff00ff]" },
@@ -127,20 +127,12 @@ export default function App() {
                   onClick={() => setIsMenuOpen(false)}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + (i * 0.1), ease: [0.16, 1, 0.3, 1] }}
-                  className={`${item.color} transition-colors flex items-center gap-6 py-4 border-b-4 border-[#d9ff36]/20 hover:border-[#ff00ff] hover:pl-8`}
+                  transition={{ delay: 0.2 + (i * 0.1) }}
+                  className={`${item.color} transition - colors flex items - center gap - 6 py - 4 border - b - 4 border - [#d9ff36] / 20 hover: border - [#ff00ff]`}
                 >
                   <item.icon size={64} className="hidden md:block" /> {item.label}
                 </motion.a>
               ))}
-              <div className="mt-auto pt-12 text-2xl md:text-4xl text-white opacity-50">
-                Follow the toxicity
-                <div className="flex gap-6 mt-4">
-                  <a href="#" className="hover:text-[#ff00ff]">IG</a>
-                  <a href="#" className="hover:text-[#00ff00]">TT</a>
-                  <a href="#" className="hover:text-[#00ffff]">X</a>
-                </div>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -171,11 +163,11 @@ export default function App() {
         </main>
 
         <footer className="border-t-4 border-black bg-black text-[#d9ff36] p-12 md:p-24 text-center flex flex-col items-center gap-8">
-          {siteSettings.site_logo_url ? (
+          {siteSettings?.site_logo_url ? (
             <img src={siteSettings.site_logo_url} alt="Logo" className="h-24 md:h-48 w-auto object-contain brightness-0 invert" />
           ) : (
             <h2 className="text-6xl md:text-9xl font-logo text-[#ff00ff] drop-shadow-[4px_4px_0px_#d9ff36]">
-              {siteSettings.site_logo_text}
+              {siteSettings?.site_logo_text || 'Nixxy Toxic'}
             </h2>
           )}
           <p className="text-2xl md:text-4xl uppercase">© {new Date().getFullYear()} All rights reserved, Bitch!</p>
