@@ -1183,7 +1183,7 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
 
         // --- LAYER 1: GALLERY BACKGROUND ---
         if (bgImageId) {
-            const bgImgUrl = data.images?.find((i: any) => i.id == bgImageId)?.url;
+            const bgImgUrl = data.gallery?.find((i: any) => i.id == bgImageId)?.url;
             if (bgImgUrl) {
                 const galleryBgImg = await new Promise<HTMLImageElement>((resolve) => {
                     const img = new Image();
@@ -1293,25 +1293,37 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
         };
 
         if (type === 'coupon' && selectedItem) {
-            drawBigText(`${selectedItem.discount_percent}% OFF`, centerY - 240, 240);
+            drawBigText(`${selectedItem.discount_percent}% OFF`, centerY - 240, 220);
 
             ctx.fillStyle = 'black';
             ctx.font = '900 80px Courier New';
             ctx.fillText('▬ USE CODE BELOW ▬', W / 2, centerY - 40);
 
-            const codeText = selectedItem.code.toUpperCase();
-            ctx.font = '900 180px Arial Black';
-            const metrics = ctx.measureText(codeText);
-            const boxW = Math.max(900, metrics.width + 120);
-            const boxH = 260;
+            let codeText = selectedItem.code.toUpperCase();
+            let fontSize = 180;
+            ctx.font = `900 ${fontSize}px Arial Black`;
+            let metrics = ctx.measureText(codeText);
 
+            // Limit box width to 960 (W - 120)
+            const MAX_BOX_W = 960;
+            while (metrics.width + 120 > MAX_BOX_W && fontSize > 80) {
+                fontSize -= 10;
+                ctx.font = `900 ${fontSize}px Arial Black`;
+                metrics = ctx.measureText(codeText);
+            }
+
+            const boxW = metrics.width + 120;
+            const boxH = fontSize * 1.4;
+
+            ctx.fillStyle = 'black';
             ctx.fillRect((W - boxW) / 2, centerY, boxW, boxH);
             ctx.fillStyle = bgColor;
-            ctx.fillText(codeText, W / 2, centerY + 185);
+            ctx.textAlign = 'center';
+            ctx.fillText(codeText, W / 2, centerY + (boxH * 0.75));
 
             ctx.fillStyle = 'black';
             ctx.font = '900 70px Arial Black';
-            ctx.fillText('LIMITED TIME ONLY', W / 2, centerY + 380);
+            ctx.fillText('LIMITED TIME ONLY', W / 2, centerY + boxH + 80);
 
         } else if (type === 'event' && selectedItem) {
             drawBigText('SICK SHOW ALERT!', centerY - 450, 120, '#ff00ff');
@@ -1441,7 +1453,7 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
                                 className="w-full border-4 border-black p-3 text-lg font-bold bg-white"
                             >
                                 <option value="">-- No Background --</option>
-                                {data.images?.map((img: any) => (
+                                {data.gallery?.map((img: any) => (
                                     <option key={img.id} value={img.id}>
                                         Image #{img.id}
                                     </option>
