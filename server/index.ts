@@ -7,6 +7,7 @@ import multer from 'multer';
 import sharp from 'sharp';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { sendEmail, generateOrderEmail, generateTicketEmail } from './email.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -189,7 +190,7 @@ app.patch('/api/events/:id', authenticate, (req, res) => {
     res.sendStatus(200);
 });
 
-import { sendEmail, generateOrderEmail, generateTicketEmail } from './email';
+
 
 // Products (Merchandise)
 app.get('/api/products', (req, res) => {
@@ -305,8 +306,14 @@ app.post('/api/checkout', async (req, res) => {
         subject = `💰 TOXIC ORDER CONFIRMATION #${orderId}`;
     }
 
-    if (process.env.SMTP_ENABLED === 'true') {
-        await sendEmail({ to: customer_email, subject, html: emailHtml });
+    // Try sending email (it internally checks if SMTP is enabled in DB)
+    try {
+        const emailResult = await sendEmail({ to: customer_email, subject, html: emailHtml });
+        if (!emailResult.success) {
+            console.error("Email failed but order was placed:", emailResult.error || emailResult.message);
+        }
+    } catch (err) {
+        console.error("Unexpected error in email logic:", err);
     }
 
     res.json({ success: true, orderId });

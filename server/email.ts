@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import db from './db';
+import db from './db.js';
 
 export async function sendEmail({ to, subject, html }: { to: string, subject: string, html: string }) {
     const smtp = db.prepare('SELECT * FROM smtp_settings WHERE id = 1').get() as any;
@@ -9,26 +9,37 @@ export async function sendEmail({ to, subject, html }: { to: string, subject: st
         return { success: false, message: "SMTP disabled" };
     }
 
+    // Intelligent secure setting: 465 usually needs true, others false
+    const isSSL = smtp.encryption === 'ssl' || smtp.port === 465;
+
     const transporter = nodemailer.createTransport({
         host: smtp.host,
         port: smtp.port,
-        secure: smtp.encryption === 'ssl',
+        secure: isSSL,
         auth: {
             user: smtp.username,
             pass: smtp.password,
         },
+        // For self-signed certs often found in smaller VPS
+        tls: {
+            rejectUnauthorized: false
+        }
     });
 
+    const fromAddress = smtp.from_email || (smtp.username.includes('@') ? smtp.username : 'noreply@nixxytoxic.com');
+
     try {
-        await transporter.sendMail({
-            from: `"${smtp.from_name || 'Nixxy Toxic'}" <${smtp.from_email || smtp.username}>`,
+        console.log(`Sending email to ${to} using ${smtp.host}:${smtp.port}...`);
+        const info = await transporter.sendMail({
+            from: `"${smtp.from_name || 'Nixxy Toxic'}" <${fromAddress}>`,
             to,
             subject,
             html,
         });
+        console.log(`Email sent successfully: ${info.messageId}`);
         return { success: true };
     } catch (error) {
-        console.error("Email send error:", error);
+        console.error("CRITICAL SMTP ERROR:", error);
         return { success: false, error };
     }
 }
