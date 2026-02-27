@@ -1158,6 +1158,7 @@ function BannersTab({ items, onUpdate, openConfirm, openForm }: { items: any[], 
 
 function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
     const [type, setType] = useState<'coupon' | 'event' | 'merch'>('coupon');
+    const [format, setFormat] = useState<'post' | 'story'>('post');
     const [selectedId, setSelectedId] = useState<number | string>('');
     const [bgColor, setBgColor] = useState('#d9ff36');
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -1170,75 +1171,141 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // Clear and fill background
-        ctx.fillStyle = bgColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        const W = 1080;
+        const H = format === 'post' ? 1080 : 1920;
+        canvas.width = W;
+        canvas.height = H;
 
-        // Header / Logo area
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, canvas.width, 200);
+        // 1. Background Base
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, W, H);
+
+        // 2. Texture / Grain Overlay
+        ctx.save();
+        ctx.globalAlpha = 0.05;
+        for (let i = 0; i < 5000; i++) {
+            ctx.fillStyle = Math.random() > 0.5 ? 'white' : 'black';
+            ctx.fillRect(Math.random() * W, Math.random() * H, 2, 2);
+        }
+        ctx.restore();
+
+        // 3. Decorative Border / Frame
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 40;
+        ctx.strokeRect(20, 20, W - 40, H - 40);
+
+        // Decorative "X" corners
+        const drawX = (x: number, y: number) => {
+            ctx.beginPath();
+            ctx.lineWidth = 10;
+            ctx.moveTo(x - 30, y - 30); ctx.lineTo(x + 30, y + 30);
+            ctx.moveTo(x + 30, y - 30); ctx.lineTo(x - 30, y + 30);
+            ctx.stroke();
+        };
+        ctx.strokeStyle = '#ff00ff';
+        drawX(80, 80); drawX(W - 80, 80); drawX(80, H - 80); drawX(W - 80, H - 80);
 
         const drawContent = (logoImg?: HTMLImageElement) => {
+            // Header Bar
+            ctx.fillStyle = 'black';
+            const headerH = format === 'post' ? 220 : 350;
+            ctx.fillRect(0, 0, W, headerH);
+
             if (logoImg) {
                 const aspect = logoImg.width / logoImg.height;
-                const h = 120;
+                const h = format === 'post' ? 140 : 180;
                 const w = h * aspect;
-                ctx.drawImage(logoImg, (canvas.width - w) / 2, 40, w, h);
+                ctx.drawImage(logoImg, (W - w) / 2, (headerH - h) / 2, w, h);
             } else {
                 ctx.fillStyle = '#ff00ff';
-                ctx.font = 'bold 80px Arial Black';
+                ctx.font = '900 100px Arial Black';
                 ctx.textAlign = 'center';
-                ctx.fillText('NIXXY TOXIC', canvas.width / 2, 130);
+                ctx.fillText('NIXXY TOXIC', W / 2, headerH / 2 + 30);
             }
 
-            // Main Content
+            // Central Area
             const selectedItem = items.find((i: any) => i.id == selectedId);
-            ctx.fillStyle = 'black';
-            ctx.textAlign = 'center';
+            const centerY = H / 2 + (format === 'post' ? 50 : 100);
+
+            const drawGlitchText = (text: string, y: number, size: number, color: string = 'black') => {
+                ctx.save();
+                ctx.textAlign = 'center';
+                // Shadow / Glitch layer 1
+                ctx.fillStyle = '#00ffff';
+                ctx.font = `900 ${size}px Arial Black`;
+                ctx.fillText(text, W / 2 - 8, y + 4);
+                // Shadow / Glitch layer 2
+                ctx.fillStyle = '#ff00ff';
+                ctx.fillText(text, W / 2 + 8, y - 4);
+                // Main text
+                ctx.fillStyle = color;
+                ctx.fillText(text, W / 2, y);
+                ctx.restore();
+            };
 
             if (type === 'coupon' && selectedItem) {
-                ctx.font = 'black 120px Arial Black';
-                ctx.fillText(`${selectedItem.discount_percent}% OFF`, canvas.width / 2, 500);
-                ctx.font = 'bold 60px Courier New';
-                ctx.fillText('USE CODE:', canvas.width / 2, 650);
-                ctx.fillStyle = '#ff00ff';
-                ctx.font = '900 140px Arial Black';
-                ctx.shadowColor = 'black';
-                ctx.shadowBlur = 0;
-                ctx.shadowOffsetX = 10;
-                ctx.shadowOffsetY = 10;
-                ctx.fillText(selectedItem.code, canvas.width / 2, 850);
+                drawGlitchText(`${selectedItem.discount_percent}% OFF`, centerY - 150, 160);
+
+                ctx.fillStyle = 'black';
+                ctx.font = 'bold 50px Courier New';
+                ctx.fillText('• USE CODE BELOW •', W / 2, centerY);
+
+                // Code Box
+                const boxW = 800;
+                const boxH = 200;
+                ctx.fillRect((W - boxW) / 2, centerY + 80, boxW, boxH);
+
+                ctx.fillStyle = '#d9ff36';
+                ctx.font = '900 130px Arial Black';
+                ctx.fillText(selectedItem.code, W / 2, centerY + 225);
+
             } else if (type === 'event' && selectedItem) {
-                ctx.font = '900 100px Arial Black';
-                ctx.fillText('LIVE SHOW!', canvas.width / 2, 450);
+                drawGlitchText('LIVE TOUR', centerY - 250, 100, '#ff00ff');
+                ctx.fillStyle = 'black';
+                ctx.font = '900 180px Arial Black';
+                ctx.fillText(selectedItem.city.toUpperCase(), W / 2, centerY - 20);
+
+                ctx.lineWidth = 15;
+                ctx.beginPath();
+                ctx.moveTo(W / 2 - 300, centerY + 30); ctx.lineTo(W / 2 + 300, centerY + 30);
+                ctx.stroke();
+
+                ctx.font = 'bold 70px Courier New';
+                ctx.fillText(selectedItem.venue.toUpperCase(), W / 2, centerY + 120);
+
                 ctx.fillStyle = '#ff00ff';
                 ctx.font = '900 120px Arial Black';
-                ctx.fillText(selectedItem.city.toUpperCase(), canvas.width / 2, 600);
-                ctx.fillStyle = 'black';
-                ctx.font = 'bold 60px Courier New';
-                ctx.fillText(selectedItem.venue.toUpperCase(), canvas.width / 2, 720);
-                ctx.font = 'bold 80px Arial Black';
-                ctx.fillText(selectedItem.date.toUpperCase(), canvas.width / 2, 850);
+                ctx.fillText(selectedItem.date.toUpperCase(), W / 2, centerY + 250);
+
             } else if (type === 'merch' && selectedItem) {
-                ctx.font = '900 80px Arial Black';
-                ctx.fillText('NEW MERCH!', canvas.width / 2, 450);
-                ctx.fillStyle = '#ff00ff';
-                ctx.font = '900 100px Arial Black';
-                ctx.fillText(selectedItem.name.toUpperCase(), canvas.width / 2, 600);
+                drawGlitchText('DROP ALERT!', centerY - 250, 90, '#ff00ff');
+
+                // Name
                 ctx.fillStyle = 'black';
-                ctx.font = '900 140px Arial Black';
-                ctx.fillText(`${selectedItem.price}€`, canvas.width / 2, 800);
+                ctx.font = '900 110px Arial Black';
+                ctx.fillText(selectedItem.name.toUpperCase(), W / 2, centerY - 50);
+
+                // Price with circle tag
+                ctx.beginPath();
+                ctx.arc(W / 2, centerY + 150, 140, 0, Math.PI * 2);
+                ctx.fillStyle = 'black';
+                ctx.fill();
+
+                ctx.fillStyle = '#d9ff36';
+                ctx.font = '900 100px Arial Black';
+                ctx.fillText(`${selectedItem.price}€`, W / 2, centerY + 185);
             } else {
-                ctx.font = 'bold 60px Arial';
-                ctx.fillText('SELECT SOMETHING TO PROMOTE, BITCH!', canvas.width / 2, 600);
+                ctx.font = 'bold 50px Courier New';
+                ctx.fillText('// SELECT ITEM TO GENERATE //', W / 2, centerY);
             }
 
-            // Footer
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 0;
+            // Footer / URL
+            const footerY = H - 100;
             ctx.fillStyle = 'black';
-            ctx.font = 'bold 40px Courier New';
-            ctx.fillText('nixxytoxic.com', canvas.width / 2, 1020);
+            ctx.fillRect(0, footerY - 80, W, 100);
+            ctx.fillStyle = '#d9ff36';
+            ctx.font = 'bold 45px Courier New';
+            ctx.fillText('WWW.NIXXYTOXIC.COM', W / 2, footerY - 15);
         };
 
         if (logoUrl) {
@@ -1256,30 +1323,45 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const link = document.createElement('a');
-        link.download = `promo-${type}-${Date.now()}.png`;
+        link.download = `toxic-${type}-${format}-${Date.now()}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
     };
 
     useEffect(() => {
         generateImage();
-    }, [type, selectedId, bgColor, data]);
+    }, [type, format, selectedId, bgColor, data]);
 
     return (
-        <div className="flex flex-col lg:flex-row gap-8">
-            <div className="flex-1 space-y-8">
+        <div className="flex flex-col xl:flex-row gap-8 items-start">
+            <div className="w-full xl:w-96 space-y-6">
                 <div className="border-4 border-black p-6 bg-white shadow-[8px_8px_0px_0px_black]">
-                    <h3 className="text-2xl font-black uppercase mb-6 italic">Configuration</h3>
+                    <h3 className="text-2xl font-black uppercase mb-6 italic border-b-2 border-black pb-2">Promo Studio</h3>
 
                     <div className="space-y-6">
                         <div>
-                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">Promote What?</label>
+                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">1. Choose Format</label>
+                            <div className="flex gap-2">
+                                {(['post', 'story'] as const).map(f => (
+                                    <button
+                                        key={f}
+                                        onClick={() => setFormat(f)}
+                                        className={`flex-1 py-3 border-4 border-black font-black uppercase transition-all ${format === f ? 'bg-[#ff00ff] text-white shadow-[4px_4px_0px_0px_black]' : 'bg-gray-100'}`}
+                                    >
+                                        {f}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">2. Content Type</label>
                             <div className="flex gap-2">
                                 {(['coupon', 'event', 'merch'] as const).map(t => (
                                     <button
                                         key={t}
                                         onClick={() => { setType(t); setSelectedId(''); }}
-                                        className={`flex-1 py-3 border-4 border-black font-black uppercase transition-all ${type === t ? 'bg-black text-[#d9ff36]' : 'bg-gray-100'}`}
+                                        className={`flex-1 py-2 border-2 border-black font-black uppercase text-xs transition-all ${type === t ? 'bg-black text-[#d9ff36]' : 'bg-gray-100 opacity-60'}`}
                                     >
                                         {t}
                                     </button>
@@ -1288,13 +1370,13 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">Select Item</label>
+                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">3. Select Item</label>
                             <select
                                 value={selectedId}
                                 onChange={e => setSelectedId(e.target.value)}
-                                className="w-full border-4 border-black p-3 text-xl font-bold bg-white"
+                                className="w-full border-4 border-black p-3 text-lg font-bold bg-white"
                             >
-                                <option value="">-- Choose Item --</option>
+                                <option value="">-- Choose --</option>
                                 {items.map((item: any) => (
                                     <option key={item.id} value={item.id}>
                                         {type === 'coupon' ? item.code : type === 'event' ? `${item.city} (${item.date})` : item.name}
@@ -1304,34 +1386,42 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">Background Color</label>
+                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">4. Main Accent Color</label>
                             <input
                                 type="color"
                                 value={bgColor}
                                 onChange={e => setBgColor(e.target.value)}
-                                className="w-full h-12 border-4 border-black cursor-pointer"
+                                className="w-full h-14 border-4 border-black cursor-pointer bg-white p-1"
                             />
                         </div>
 
                         <button
                             onClick={download}
-                            className="w-full bg-[#ff00ff] text-white py-4 text-2xl font-black uppercase hover:bg-black transition-all shadow-[6px_6px_0px_0px_#000]"
+                            className="w-full bg-black text-[#d9ff36] py-5 text-2xl font-black uppercase hover:bg-[#ff00ff] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_black] transition-all shadow-[4px_4px_0px_0px_black]"
                         >
-                            Download for Insta
+                            GET PROMO IMAGE
                         </button>
                     </div>
                 </div>
+
+                <div className="bg-[#d9ff36] border-4 border-black p-4 italic font-black text-xs uppercase">
+                    PRO TIP: Choose "Story" for temporary hype and "Post" for your permanent grid, Bitch!
+                </div>
             </div>
 
-            <div className="lg:w-[600px] flex flex-col items-center">
-                <p className="text-xs font-black uppercase mb-2 opacity-40 font-mono">Live Preview (1080x1080)</p>
-                <div className="border-8 border-black shadow-[20px_20px_0px_0px_#ff00ff] bg-black max-w-full">
-                    <canvas
-                        ref={canvasRef}
-                        width={1080}
-                        height={1080}
-                        className="max-w-full h-auto"
-                    />
+            <div className="flex-1 flex flex-col items-center">
+                <div className="sticky top-24 w-full flex flex-col items-center">
+                    <div className="mb-4 flex items-center gap-4">
+                        <span className="bg-black text-white px-3 py-1 text-xs font-black uppercase">Live Studio Preview</span>
+                        <span className="opacity-40 text-xs font-mono">{format === 'post' ? '1080 x 1080 px' : '1080 x 1920 px'}</span>
+                    </div>
+
+                    <div className={`border-[12px] border-black shadow-[30px_30px_0px_0px_rgba(0,0,0,0.1)] bg-gray-200 overflow-hidden ${format === 'story' ? 'max-h-[70vh]' : 'max-w-full'}`}>
+                        <canvas
+                            ref={canvasRef}
+                            className={`${format === 'story' ? 'h-full w-auto' : 'w-full h-auto max-w-[500px]'}`}
+                        />
+                    </div>
                 </div>
             </div>
         </div>
