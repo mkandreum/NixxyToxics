@@ -10,7 +10,7 @@ import jwt from 'jsonwebtoken';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'nixxy-toxic-secret-key';
 
 app.use(express.json());
@@ -129,10 +129,15 @@ app.get('/api/events', (req, res) => {
 });
 
 app.post('/api/events', authenticate, (req, res) => {
-    const { date, city, venue, ticket_price, buy_url, tickets_available } = req.body;
-    const stmt = db.prepare('INSERT INTO events (date, city, venue, ticket_price, buy_url, tickets_available) VALUES (?, ?, ?, ?, ?, ?)');
-    const info = stmt.run(date, city, venue, ticket_price || 0, buy_url || '', tickets_available || 100);
-    res.json({ id: info.lastInsertRowid });
+    try {
+        const { date, city, venue, ticket_price, buy_url, tickets_available } = req.body;
+        const stmt = db.prepare('INSERT INTO events (date, city, venue, ticket_price, buy_url, tickets_available) VALUES (?, ?, ?, ?, ?, ?)');
+        const info = stmt.run(date, city, venue, ticket_price || 0, buy_url || '', tickets_available || 100);
+        res.json({ id: info.lastInsertRowid });
+    } catch (err) {
+        console.error("Error creating event:", err);
+        res.status(500).json({ error: "Failed to create event" });
+    }
 });
 
 app.delete('/api/events/:id', authenticate, (req, res) => {
@@ -211,13 +216,13 @@ app.get('/api/smtp', authenticate, (req, res) => {
 });
 
 app.post('/api/smtp', authenticate, (req, res) => {
-    const { enabled, host, port, username, password, encryption, from_name, from_email } = req.body;
+    const { enabled, host, port, username, password, encryption, from_name, from_email, order_template, ticket_template, order_instructions } = req.body;
     const stmt = db.prepare(`
         UPDATE smtp_settings 
-        SET enabled = ?, host = ?, port = ?, username = ?, password = ?, encryption = ?, from_name = ?, from_email = ?
+        SET enabled = ?, host = ?, port = ?, username = ?, password = ?, encryption = ?, from_name = ?, from_email = ?, order_template = ?, ticket_template = ?, order_instructions = ?
         WHERE id = 1
     `);
-    stmt.run(enabled ? 1 : 0, host, port, username, password, encryption, from_name, from_email);
+    stmt.run(enabled ? 1 : 0, host, port, username, password, encryption, from_name, from_email, order_template, ticket_template, order_instructions);
     res.sendStatus(200);
 });
 
@@ -309,3 +314,4 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });
+// Force reload trigger

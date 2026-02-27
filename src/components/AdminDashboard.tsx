@@ -11,15 +11,20 @@ interface AdminDashboardProps {
     onLogout: () => void;
 }
 
-const toxicFetch = (url: string, options: any = {}) => {
+const toxicFetch = async (url: string, options: any = {}) => {
     const token = localStorage.getItem('toxic_token');
-    return fetch(url, {
+    const res = await fetch(url, {
         ...options,
         headers: {
             ...options.headers,
             'Authorization': `Bearer ${token}`
         }
     });
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Operation failed, bitch!');
+    }
+    return res;
 };
 
 interface CustomModalProps {
@@ -146,14 +151,20 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 { key: 'date', label: 'Date', type: 'text', placeholder: 'OCT 31' },
                 { key: 'ticket_price', label: 'Price (EUR)', type: 'number', placeholder: '15.00' },
             ], async (formData) => {
-                showToast("Adding Drag Show...", "loading");
-                await toxicFetch('/api/events', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
-                refreshData();
-                showToast("Drag Show added!", "success");
+                const toastId = showToast("Adding Drag Show...", "loading");
+                try {
+                    await toxicFetch('/api/events', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                    refreshData();
+                    showToast("Drag Show added!", "success");
+                } catch (err: any) {
+                    showToast(err.message || "Failed to add show", "error");
+                } finally {
+                    hideToast(toastId);
+                }
             });
         } else if (activeTab === 'banners') {
             openForm("New Banner", [
@@ -509,41 +520,86 @@ function SMTPTab({ smtp, onUpdate }: { smtp: any, onUpdate: () => void }) {
     };
 
     return (
-        <form onSubmit={handleSave} className="max-w-2xl space-y-6">
-            <div className="flex items-center gap-4 border-4 border-black p-6 bg-[#d9ff36]/10">
-                <input
-                    type="checkbox"
-                    checked={formData.enabled === 1}
-                    onChange={e => setFormData({ ...formData, enabled: e.target.checked ? 1 : 0 })}
-                    className="w-10 h-10 accent-black border-4 border-black"
-                />
-                <label className="text-3xl font-black uppercase">Enable Email Notifications</label>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <label className="font-black uppercase">SMTP Host</label>
-                    <input type="text" value={formData.host || ''} onChange={e => setFormData({ ...formData, host: e.target.value })} className="w-full border-4 border-black p-4 outline-none font-bold" />
+        <form onSubmit={handleSave} className="max-w-4xl space-y-8">
+            <div className="bg-[#d9ff36]/10 border-4 border-black p-6 space-y-6">
+                <div className="flex items-center gap-4 border-b-2 border-black pb-6">
+                    <input
+                        type="checkbox"
+                        checked={formData.enabled === 1}
+                        onChange={e => setFormData({ ...formData, enabled: e.target.checked ? 1 : 0 })}
+                        className="w-10 h-10 accent-black border-4 border-black"
+                    />
+                    <label className="text-3xl font-black uppercase">Enable Notifications</label>
                 </div>
-                <div className="space-y-2">
-                    <label className="font-black uppercase">Port</label>
-                    <input type="number" value={formData.port || ''} onChange={e => setFormData({ ...formData, port: parseInt(e.target.value) })} className="w-full border-4 border-black p-4 outline-none font-bold" />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <label className="font-black uppercase text-sm opacity-60">SMTP Host</label>
+                        <input type="text" value={formData.host || ''} onChange={e => setFormData({ ...formData, host: e.target.value })} className="w-full border-4 border-black p-4 outline-none font-bold bg-white" />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="font-black uppercase text-sm opacity-60">Port</label>
+                        <input type="number" value={formData.port || ''} onChange={e => setFormData({ ...formData, port: parseInt(e.target.value) })} className="w-full border-4 border-black p-4 outline-none font-bold bg-white" />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="font-black uppercase text-sm opacity-60">Username / Email</label>
+                        <input type="text" value={formData.username || ''} onChange={e => setFormData({ ...formData, username: e.target.value })} className="w-full border-4 border-black p-4 outline-none font-bold bg-white" />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="font-black uppercase text-sm opacity-60">Password</label>
+                        <input type="password" value={formData.password || ''} onChange={e => setFormData({ ...formData, password: e.target.value })} className="w-full border-4 border-black p-4 outline-none font-bold bg-white" />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t-2 border-black">
+                    <div className="space-y-2">
+                        <label className="font-black uppercase text-sm opacity-60">Sender Name (e.g. Nixxy Toxic)</label>
+                        <input type="text" value={formData.from_name || ''} onChange={e => setFormData({ ...formData, from_name: e.target.value })} className="w-full border-4 border-black p-4 outline-none font-bold bg-white" placeholder="Nixxy Toxic" />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="font-black uppercase text-sm opacity-60">Sender Email (e.g. no-reply@site.com)</label>
+                        <input type="text" value={formData.from_email || ''} onChange={e => setFormData({ ...formData, from_email: e.target.value })} className="w-full border-4 border-black p-4 outline-none font-bold bg-white" placeholder="no-reply@yourdomain.com" />
+                    </div>
                 </div>
             </div>
 
-            <div className="space-y-2">
-                <label className="font-black uppercase">Username / Email</label>
-                <input type="text" value={formData.username || ''} onChange={e => setFormData({ ...formData, username: e.target.value })} className="w-full border-4 border-black p-4 outline-none font-bold" />
-            </div>
+            <div className="space-y-6">
+                <h3 className="text-4xl font-black uppercase italic tracking-tighter border-b-4 border-black pb-2">Email Templates</h3>
 
-            <div className="space-y-2">
-                <label className="font-black uppercase">Password</label>
-                <input type="password" value={formData.password || ''} onChange={e => setFormData({ ...formData, password: e.target.value })} className="w-full border-4 border-black p-4 outline-none font-bold" />
+                <div className="space-y-2">
+                    <label className="font-black uppercase">Order Message (Custom intro)</label>
+                    <textarea
+                        value={formData.order_template || ''}
+                        onChange={e => setFormData({ ...formData, order_template: e.target.value })}
+                        className="w-full border-4 border-black p-4 outline-none font-bold bg-white min-h-[120px]"
+                        placeholder="Thanks for being toxic! Your order is being processed..."
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <label className="font-black uppercase">Purchase Instructions (Payment details, etc)</label>
+                    <textarea
+                        value={formData.order_instructions || ''}
+                        onChange={e => setFormData({ ...formData, order_instructions: e.target.value })}
+                        className="w-full border-4 border-black p-4 outline-none font-bold bg-black text-[#d9ff36] min-h-[150px]"
+                        placeholder="Steps for payment go here..."
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <label className="font-black uppercase">Ticket Message (Live show intro)</label>
+                    <textarea
+                        value={formData.ticket_template || ''}
+                        onChange={e => setFormData({ ...formData, ticket_template: e.target.value })}
+                        className="w-full border-4 border-black p-4 outline-none font-bold bg-white min-h-[120px]"
+                        placeholder="You are ready for the show! Here is your ticket..."
+                    />
+                </div>
             </div>
 
             <div className="pt-6">
-                <button type="submit" className="bg-black text-[#d9ff36] px-12 py-6 text-3xl uppercase font-black hover:bg-[#ff00ff] hover:text-black transition-all shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                    Save SMTP Settings
+                <button type="submit" className="w-full md:w-auto bg-black text-[#d9ff36] px-12 py-6 text-3xl uppercase font-black hover:bg-[#ff00ff] hover:text-white transition-all shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                    Save All SMTP & Email Settings
                 </button>
             </div>
         </form>

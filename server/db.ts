@@ -99,7 +99,10 @@ db.exec(`
     password TEXT,
     encryption TEXT DEFAULT 'tls',
     from_name TEXT,
-    from_email TEXT
+    from_email TEXT,
+    order_template TEXT,
+    ticket_template TEXT,
+    order_instructions TEXT
   )
 `);
 
@@ -115,6 +118,19 @@ if (adminCount.count === 0) {
 const smtpCount = db.prepare('SELECT count(*) as count FROM smtp_settings').get() as any;
 if (smtpCount.count === 0) {
   db.prepare('INSERT INTO smtp_settings (id, enabled) VALUES (1, 0)').run();
+} else {
+  // Migration for existing DBs
+  const columns = db.prepare("PRAGMA table_info(smtp_settings)").all() as any[];
+  const columnNames = columns.map(c => c.name);
+  if (!columnNames.includes('order_template')) {
+    db.exec("ALTER TABLE smtp_settings ADD COLUMN order_template TEXT");
+  }
+  if (!columnNames.includes('ticket_template')) {
+    db.exec("ALTER TABLE smtp_settings ADD COLUMN ticket_template TEXT");
+  }
+  if (!columnNames.includes('order_instructions')) {
+    db.exec("ALTER TABLE smtp_settings ADD COLUMN order_instructions TEXT");
+  }
 }
 
 export default db;
