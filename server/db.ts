@@ -131,6 +131,19 @@ if (smtpCount.count === 0) {
   if (!columnNames.includes('order_instructions')) {
     db.exec("ALTER TABLE smtp_settings ADD COLUMN order_instructions TEXT");
   }
+
+  // Migration for events table
+  const eventColumns = db.prepare("PRAGMA table_info(events)").all() as any[];
+  const eventColumnNames = eventColumns.map(c => c.name);
+  if (!eventColumnNames.includes('ticket_price')) {
+    db.exec("ALTER TABLE events ADD COLUMN ticket_price REAL DEFAULT 0");
+  }
+  if (!eventColumnNames.includes('buy_url')) {
+    db.exec("ALTER TABLE events ADD COLUMN buy_url TEXT");
+  }
+  if (!eventColumnNames.includes('tickets_available')) {
+    db.exec("ALTER TABLE events ADD COLUMN tickets_available INTEGER DEFAULT 100");
+  }
 }
 
 export default db;
