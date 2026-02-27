@@ -18,7 +18,7 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuClicks, setMenuClicks] = useState(0);
   const [currentView, setCurrentView] = useState<'home' | 'login' | 'admin'>('home');
-  const [siteSettings, setSiteSettings] = useState<any>({ site_logo_text: 'Nixxy Toxic', site_logo_url: '' });
+  const [siteSettings, setSiteSettings] = useState<any>({ site_logo_text: 'Nixxy Toxic', site_logo_url: '', instagram_url: '' });
 
   useEffect(() => {
     fetch('/api/settings')
@@ -106,31 +106,27 @@ export default function App() {
         <AnimatePresence>
           {isMenuOpen && (
             <motion.div
-              initial={{ y: "-100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "-100%" }}
-              transition={{
-                type: "tween",
-                ease: [0.16, 1, 0.3, 1],
-                duration: 0.5,
-              }}
-              className="fixed inset-0 z-40 bg-black text-[#d9ff36] pt-32 px-8 flex flex-col gap-8 text-5xl md:text-8xl uppercase tracking-tighter font-black overflow-y-auto pb-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/95 backdrop-blur-xl text-[#d9ff36] pt-32 px-4 flex flex-col gap-6 overflow-y-auto pb-12"
             >
               {[
-                { href: "#gallery", label: "Gallery", icon: ImageIcon, color: "hover:text-[#ff00ff]" },
-                { href: "#events", label: "Shows", icon: Calendar, color: "hover:text-[#00ff00]" },
-                { href: "#store", label: "Merch", icon: ShoppingCart, color: "hover:text-[#00ffff]" }
+                { href: "#gallery", label: "Gallery", icon: "📸" },
+                { href: "#events", label: "Shows", icon: "🎤" },
+                { href: "#store", label: "Merch", icon: "🛒" }
               ].map((item, i) => (
                 <motion.a
                   key={item.label}
                   href={item.href}
                   onClick={() => setIsMenuOpen(false)}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + (i * 0.1) }}
-                  className={`${item.color} transition - colors flex items - center gap - 6 py - 4 border - b - 4 border - [#d9ff36] / 20 hover: border - [#ff00ff]`}
+                  initial={{ x: -100, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="border-4 border-[#d9ff36] p-8 text-6xl md:text-9xl font-black uppercase italic flex items-center gap-8 hover:bg-[#d9ff36] hover:text-black transition-all hover:translate-x-4 shadow-[8px_8px_0px_0px_#ff00ff] hover:shadow-none"
                 >
-                  <item.icon size={64} className="hidden md:block" /> {item.label}
+                  <span className="text-4xl md:text-7xl">{item.icon}</span>
+                  {item.label}
                 </motion.a>
               ))}
             </motion.div>

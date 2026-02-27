@@ -18,6 +18,8 @@ export default function Events() {
   const [selectedShow, setSelectedShow] = useState<DragShow | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string, percent: number } | null>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -27,6 +29,24 @@ export default function Events() {
       .catch(console.error)
       .finally(() => setIsLoading(false));
   }, []);
+
+  const validateCoupon = async () => {
+    if (!couponCode) return;
+    showToast("Checking coupon...", "loading");
+    try {
+      const res = await fetch(`/api/coupons/validate/${couponCode}`);
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setAppliedDiscount({ code: couponCode, percent: data.discount_percent });
+        showToast(`${data.discount_percent}% Discount Applied!`, "success");
+      } else {
+        setAppliedDiscount(null);
+        showToast(data.error || "Invalid Coupon", "error");
+      }
+    } catch (err) {
+      showToast("Validation failed", "error");
+    }
+  };
 
   const handleTicketPurchase = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +62,8 @@ export default function Events() {
           customer_email: customerEmail,
           items: [{ name: `TICKET: ${selectedShow.city}`, price: selectedShow.ticket_price, quantity: 1 }],
           total: selectedShow.ticket_price,
-          event_id: selectedShow.id
+          event_id: selectedShow.id,
+          coupon_code: couponCode
         })
       });
       const data = await res.json();
@@ -51,6 +72,10 @@ export default function Events() {
         setSelectedShow(null);
         setCustomerName("");
         setCustomerEmail("");
+        setCouponCode("");
+        setAppliedDiscount(null);
+      } else {
+        showToast(data.error || "Error processing ticket", "error");
       }
     } catch (err) {
       showToast("Error processing ticket", "error");
@@ -138,17 +163,39 @@ export default function Events() {
               <form onSubmit={handleTicketPurchase} className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-xl font-black uppercase">Your Name</label>
-                  <input required type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full border-4 border-black p-4 text-2xl outline-none" />
+                  <input required type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full border-4 border-black p-4 text-2xl outline-none" placeholder="FUCKING NAME" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xl font-black uppercase">Your Email</label>
-                  <input required type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border-4 border-black p-4 text-2xl outline-none" />
+                  <input required type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border-4 border-black p-4 text-2xl outline-none" placeholder="YOU@TOXIC.COM" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xl font-black uppercase">Coupon Code</label>
+                  <div className="flex gap-2">
+                    <input type="text" value={couponCode} onChange={e => setCouponCode(e.target.value)} className="flex-1 border-4 border-black p-4 text-2xl outline-none" placeholder="TOXIC20" />
+                    <button type="button" onClick={validateCoupon} className="bg-black text-[#dfff00] px-6 font-black uppercase hover:bg-white hover:text-black transition-colors border-4 border-black">Apply</button>
+                  </div>
+                  {appliedDiscount && (
+                    <p className="text-green-600 font-black uppercase italic animate-bounce mt-2">
+                      ✨ {appliedDiscount.percent}% OFF!
+                    </p>
+                  )}
                 </div>
 
                 <div className="p-6 bg-black text-white border-4 border-white">
+                  {appliedDiscount && (
+                    <div className="flex justify-between items-center text-xl font-black uppercase mb-2 opacity-50 line-through">
+                      <span>Subtotal:</span>
+                      <span>{selectedShow.ticket_price}€</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center text-3xl font-black uppercase italic">
                     <span>Total:</span>
-                    <span>{selectedShow.ticket_price}€</span>
+                    <span>
+                      {appliedDiscount
+                        ? (selectedShow.ticket_price - (selectedShow.ticket_price * appliedDiscount.percent / 100)).toFixed(2)
+                        : selectedShow.ticket_price}€
+                    </span>
                   </div>
                 </div>
 

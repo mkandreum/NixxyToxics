@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "motion/react";
-import { ShoppingBag, ArrowRight } from "lucide-react";
+import { ShoppingBag, ArrowRight, Instagram } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Hero() {
@@ -49,8 +49,21 @@ export default function Hero() {
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.6 }}
-            className="flex flex-col sm:flex-row gap-6 mt-8 w-full sm:w-auto"
+            className="flex flex-col gap-6 mt-8 w-full sm:w-auto"
           >
+            {settings.instagram_url && (
+              <a
+                href={settings.instagram_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group bg-[#ff00ff] text-white px-10 py-5 text-2xl uppercase font-black border-4 border-black hover:bg-black hover:text-[#ff00ff] transition-all shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-4 hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
+              >
+                <Instagram size={28} />
+                Instagram
+                <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+              </a>
+            )}
+
             <a
               href="#store"
               className="group bg-black text-[#d9ff36] px-10 py-5 text-2xl uppercase font-black border-4 border-black hover:bg-[#ff00ff] hover:text-white transition-all shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-4 hover:translate-x-1 hover:translate-y-1 hover:shadow-none"

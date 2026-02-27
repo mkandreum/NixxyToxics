@@ -24,6 +24,7 @@ export default function Store() {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [couponCode, setCouponCode] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percent: number } | null>(null);
 
   useEffect(() => {
     fetch('/api/products')
@@ -58,6 +59,26 @@ export default function Store() {
   };
 
   const total = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const discountAmount = appliedDiscount ? (total * appliedDiscount.percent) / 100 : 0;
+  const finalTotal = total - discountAmount;
+
+  const validateCoupon = async () => {
+    if (!couponCode) return;
+    showToast("Checking coupon...", "loading");
+    try {
+      const res = await fetch(`/api/coupons/validate/${couponCode}`);
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setAppliedDiscount({ code: couponCode, percent: data.discount_percent });
+        showToast(`${data.discount_percent}% Discount Applied!`, "success");
+      } else {
+        setAppliedDiscount(null);
+        showToast(data.error || "Invalid Coupon, Bitch!", "error");
+      }
+    } catch (err) {
+      showToast("Validation failed", "error");
+    }
+  };
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -257,7 +278,32 @@ export default function Store() {
                 </div>
                 <div className="space-y-1 md:space-y-2">
                   <label className="text-lg md:text-xl font-black uppercase">Coupon Code</label>
-                  <input type="text" value={couponCode} onChange={e => setCouponCode(e.target.value)} className="w-full border-4 border-black p-3 md:p-4 text-lg md:text-2xl outline-none focus:bg-white" placeholder="TOXIC20" />
+                  <div className="flex gap-2">
+                    <input type="text" value={couponCode} onChange={e => setCouponCode(e.target.value)} className="flex-1 border-4 border-black p-3 md:p-4 text-lg md:text-2xl outline-none focus:bg-white" placeholder="TOXIC20" />
+                    <button type="button" onClick={validateCoupon} className="bg-black text-[#d9ff36] px-6 font-black uppercase hover:bg-white hover:text-black transition-colors border-4 border-black">Apply</button>
+                  </div>
+                  {appliedDiscount && (
+                    <p className="text-green-600 font-black uppercase italic animate-bounce mt-2 text-sm">
+                      ✨ {appliedDiscount.percent}% OFF APPLIED! (-{discountAmount.toFixed(2)}€)
+                    </p>
+                  )}
+                </div>
+
+                <div className="pt-6 border-t-4 border-black mt-8">
+                  <div className="flex justify-between items-end mb-2">
+                    <span className="text-xl font-black uppercase opacity-60">Subtotal:</span>
+                    <span className="text-2xl font-black">{total.toFixed(2)}€</span>
+                  </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between items-end mb-2 text-green-600">
+                      <span className="text-xl font-black uppercase">Discount:</span>
+                      <span className="text-2xl font-black">-{discountAmount.toFixed(2)}€</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-end">
+                    <span className="text-2xl md:text-4xl font-black uppercase">Grand Total:</span>
+                    <span className="text-4xl md:text-6xl font-black italic">{finalTotal.toFixed(2)}€</span>
+                  </div>
                 </div>
                 <div className="p-6 bg-black text-[#d9ff36] border-4 border-white mt-8">
                   <p className="text-xl font-bold uppercase mb-2">Notice:</p>

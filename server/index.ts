@@ -262,6 +262,8 @@ app.post('/api/checkout', async (req, res) => {
         const coupon = db.prepare('SELECT * FROM coupons WHERE code = ? AND active = 1').get(coupon_code) as any;
         if (coupon) {
             discount = (total * coupon.discount_percent) / 100;
+        } else {
+            return res.status(400).json({ error: "Invalid or expired coupon code, Bitch!" });
         }
     }
 
@@ -363,6 +365,15 @@ app.get('/api/activity', authenticate, (req, res) => {
 app.get('/api/coupons', authenticate, (req, res) => {
     const coupons = db.prepare('SELECT * FROM coupons ORDER BY created_at DESC').all();
     res.json(coupons);
+});
+
+app.get('/api/coupons/validate/:code', (req, res) => {
+    const coupon = db.prepare('SELECT * FROM coupons WHERE code = ? AND active = 1').get(req.params.code) as any;
+    if (coupon) {
+        res.json({ valid: true, discount_percent: coupon.discount_percent });
+    } else {
+        res.status(404).json({ valid: false, error: "Invalid or expired coupon" });
+    }
 });
 
 app.post('/api/coupons', authenticate, (req, res) => {

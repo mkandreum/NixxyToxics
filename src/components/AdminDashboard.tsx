@@ -939,12 +939,14 @@ function SettingsTab({ settings, onUpdate }: { settings: any, onUpdate: () => vo
     const [bgVideo, setBgVideo] = useState(settings.gallery_bg_video || "");
     const [logoUrl, setLogoUrl] = useState(settings.site_logo_url || "");
     const [heroImageUrl, setHeroImageUrl] = useState(settings.hero_image_url || "");
+    const [instagramUrl, setInstagramUrl] = useState(settings.instagram_url || "");
 
     const handleSave = async () => {
         showToast("Saving settings...", "loading");
         const updates: any = {
             site_logo_text: logoText,
-            hero_phrase: heroPhrase
+            hero_phrase: heroPhrase,
+            instagram_url: instagramUrl
         };
         if (password) updates.admin_password = password;
         await toxicFetch('/api/settings', {
@@ -1017,6 +1019,11 @@ function SettingsTab({ settings, onUpdate }: { settings: any, onUpdate: () => vo
             <div className="space-y-4">
                 <label className="block text-2xl uppercase font-black">Hero Phrase</label>
                 <input type="text" value={heroPhrase} onChange={(e) => setHeroPhrase(e.target.value)} className="w-full border-4 border-black p-4 text-2xl outline-none focus:bg-[#d9ff36]/10" />
+            </div>
+
+            <div className="space-y-4">
+                <label className="block text-2xl uppercase font-black">Instagram URL</label>
+                <input type="text" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} placeholder="https://instagram.com/nixxytoxic" className="w-full border-4 border-black p-4 text-2xl outline-none" />
             </div>
 
             <div className="space-y-4">
