@@ -1160,12 +1160,13 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
     const [type, setType] = useState<'coupon' | 'event' | 'merch'>('coupon');
     const [format, setFormat] = useState<'post' | 'story'>('post');
     const [selectedId, setSelectedId] = useState<number | string>('');
+    const [bgImageId, setBgImageId] = useState<number | string>('');
     const [bgColor, setBgColor] = useState('#d9ff36');
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
     const items = type === 'coupon' ? data.coupons : type === 'event' ? data.events : data.products;
 
-    const generateImage = () => {
+    const generateImage = async () => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -1176,149 +1177,194 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
         canvas.width = W;
         canvas.height = H;
 
-        // --- BACKGROUND ---
+        // --- LAYER 0: COLOR BASE ---
         ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, W, H);
 
-        // Halftone Background Pattern
+        // --- LAYER 1: GALLERY BACKGROUND ---
+        if (bgImageId) {
+            const bgImgUrl = data.images?.find((i: any) => i.id == bgImageId)?.url;
+            if (bgImgUrl) {
+                const galleryBgImg = await new Promise<HTMLImageElement>((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    img.src = bgImgUrl;
+                    img.onload = () => resolve(img);
+                    img.onerror = () => resolve(undefined as any);
+                });
+                if (galleryBgImg) {
+                    ctx.save();
+                    ctx.globalAlpha = 0.2;
+                    ctx.filter = 'grayscale(100%) contrast(150%) brightness(1.2)';
+                    const canvasAspect = W / H;
+                    const imgAspect = galleryBgImg.width / galleryBgImg.height;
+                    let drawW, drawH, drawX, drawY;
+                    if (imgAspect > canvasAspect) {
+                        drawH = H;
+                        drawW = H * imgAspect;
+                        drawX = (W - drawW) / 2;
+                        drawY = 0;
+                    } else {
+                        drawW = W;
+                        drawH = W / imgAspect;
+                        drawX = 0;
+                        drawY = (H - drawH) / 2;
+                    }
+                    ctx.drawImage(galleryBgImg, drawX, drawY, drawW, drawH);
+                    ctx.restore();
+                }
+            }
+        }
+
+        // --- LAYER 2: TEXTURE & OVERLAYS ---
+        // Halftone
         ctx.save();
         ctx.fillStyle = 'black';
-        ctx.globalAlpha = 0.12;
-        const dotGap = 28;
+        ctx.globalAlpha = 0.15;
+        const dotGap = 30;
         for (let x = 0; x < W; x += dotGap) {
             for (let y = 0; y < H; y += dotGap) {
                 const dist = Math.sqrt((x - W / 2) ** 2 + (y - H / 2) ** 2);
-                const size = Math.max(2, 14 * (1 - dist / (W * 0.8)));
+                const size = Math.max(2, 16 * (1 - dist / (W * 0.9)));
                 ctx.beginPath(); ctx.arc(x, y, size, 0, Math.PI * 2); ctx.fill();
             }
         }
         ctx.restore();
 
-        // Decorative Scanlines
+        // Scanlines
         ctx.save();
         ctx.strokeStyle = 'black';
-        ctx.globalAlpha = 0.05;
-        ctx.lineWidth = 4;
-        for (let y = 0; y < H; y += 12) {
+        ctx.globalAlpha = 0.08;
+        ctx.lineWidth = 5;
+        for (let y = 0; y < H; y += 15) {
             ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
         }
         ctx.restore();
 
         // Frame
         ctx.strokeStyle = 'black';
-        ctx.lineWidth = 50;
-        ctx.strokeRect(25, 25, W - 50, H - 50);
+        ctx.lineWidth = 60;
+        ctx.strokeRect(30, 30, W - 60, H - 60);
 
+        // --- LAYER 3: CONTENT ---
+        // Header
+        ctx.fillStyle = 'black';
+        const headerH = format === 'post' ? 280 : 500;
+        ctx.fillRect(0, 0, W, headerH);
+        ctx.fillStyle = '#ff00ff';
+        ctx.fillRect(0, headerH, W, 30);
 
-        const drawContent = (logoImg?: HTMLImageElement) => {
-            // Header Section
-            ctx.fillStyle = 'black';
-            const headerH = format === 'post' ? 240 : 380;
-            ctx.fillRect(0, 0, W, headerH);
-
-            ctx.fillStyle = '#ff00ff';
-            ctx.fillRect(0, headerH, W, 20);
-
+        // Logo in Header
+        if (logoUrl) {
+            const logoImg = await new Promise<HTMLImageElement>((resolve) => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.src = logoUrl;
+                img.onload = () => resolve(img);
+                img.onerror = () => resolve(undefined as any);
+            });
             if (logoImg) {
-                const h = format === 'post' ? 160 : 220;
+                const h = format === 'post' ? 200 : 300;
                 const aspect = logoImg.width / logoImg.height;
                 ctx.drawImage(logoImg, (W - h * aspect) / 2, (headerH - h) / 2, h * aspect, h);
-            } else {
-                ctx.fillStyle = '#ff00ff';
-                ctx.font = '900 110px Arial Black';
-                ctx.textAlign = 'center';
-                ctx.fillText('NIXXY TOXIC', W / 2, headerH / 2 + 40);
             }
-
-            // Central Area
-            const selectedItem = items.find((i: any) => i.id == selectedId);
-            const centerY = H / 2 + (format === 'post' ? 60 : 130);
-
-            const drawBigText = (text: string, y: number, size: number, color: string = 'black', shadow: boolean = true) => {
-                ctx.save();
-                ctx.textAlign = 'center';
-                if (shadow) {
-                    ctx.fillStyle = '#ff00ff';
-                    ctx.font = `900 ${size}px Arial Black`;
-                    ctx.fillText(text, W / 2 + 12, y + 10);
-                }
-                ctx.fillStyle = color;
-                ctx.font = `900 ${size}px Arial Black`;
-                ctx.fillText(text, W / 2, y);
-                ctx.restore();
-            };
-
-            if (type === 'coupon' && selectedItem) {
-                drawBigText(`${selectedItem.discount_percent}% OFF`, centerY - 180, 180);
-
-                ctx.fillStyle = 'black';
-                ctx.font = '900 60px Courier New';
-                ctx.fillText('▬ USE CODE ▬', W / 2, centerY - 25);
-
-                ctx.fillRect(W / 2 - 400, centerY + 20, 800, 200);
-                ctx.fillStyle = bgColor;
-                ctx.font = '900 140px Arial Black';
-                ctx.fillText(selectedItem.code, W / 2, centerY + 165);
-
-                ctx.fillStyle = 'black';
-                ctx.font = '900 50px Arial Black';
-                ctx.fillText('ON ENTIRE SHOP', W / 2, centerY + 300);
-
-            } else if (type === 'event' && selectedItem) {
-                drawBigText('LIVE SHOW!', centerY - 300, 100, '#ff00ff');
-                ctx.fillStyle = 'black';
-                ctx.font = '900 180px Arial Black';
-                ctx.fillText(selectedItem.city.toUpperCase(), W / 2, centerY - 120);
-
-                ctx.fillRect(W / 2 - 450, centerY - 60, 900, 160);
-                ctx.fillStyle = '#ff00ff';
-                ctx.font = '900 110px Arial Black';
-                ctx.fillText(selectedItem.date.toUpperCase(), W / 2, centerY + 55);
-
-                ctx.fillStyle = 'black';
-                ctx.font = '900 80px Arial Black';
-                ctx.fillText(selectedItem.venue.toUpperCase(), W / 2, centerY + 180);
-
-                ctx.font = '900 50px Courier New';
-                ctx.fillText('GET TICKETS NOW', W / 2, centerY + 280);
-
-            } else if (type === 'merch' && selectedItem) {
-                drawBigText('NEW DROP!', centerY - 320, 110, '#ff00ff');
-                ctx.fillStyle = 'black';
-                ctx.font = '900 130px Arial Black';
-                ctx.fillText(selectedItem.name.toUpperCase(), W / 2, centerY - 120);
-
-                ctx.beginPath(); ctx.arc(W / 2, centerY + 120, 180, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = bgColor;
-                ctx.font = '900 140px Arial Black';
-                ctx.fillText(`${selectedItem.price}€`, W / 2, centerY + 175);
-
-                ctx.fillStyle = 'black';
-                ctx.font = '900 60px Arial Black';
-                ctx.fillText('AVAILABLE NOW', W / 2, centerY + 340);
-            } else {
-                ctx.font = '900 55px Courier New';
-                ctx.fillText('// SELECT ITEM //', W / 2, centerY);
-            }
-
-            // Footer (No WWW)
-            const footerY = H - 90;
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, footerY - 90, W, 120);
+        } else {
             ctx.fillStyle = '#ff00ff';
-            ctx.font = '900 70px Arial Black';
-            ctx.fillText('NIXXYTOXIC.COM', W / 2, footerY + 5);
+            ctx.font = '900 140px Arial Black';
+            ctx.textAlign = 'center';
+            ctx.fillText('NIXXY TOXIC', W / 2, headerH / 2 + 50);
+        }
+
+        const selectedItem = items.find((i: any) => i.id == selectedId);
+        const centerY = H / 2 + (format === 'post' ? 80 : 180);
+
+        const drawBigText = (text: string, y: number, size: number, color: string = 'black', shadow = true) => {
+            ctx.save();
+            ctx.textAlign = 'center';
+            if (shadow) {
+                ctx.fillStyle = '#ff00ff';
+                ctx.font = `900 ${size}px Arial Black`;
+                ctx.fillText(text, W / 2 + 15, y + 12);
+            }
+            ctx.fillStyle = color;
+            ctx.font = `900 ${size}px Arial Black`;
+            ctx.fillText(text, W / 2, y);
+            ctx.restore();
         };
 
-        if (logoUrl) {
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.src = logoUrl;
-            img.onload = () => drawContent(img);
-            img.onerror = () => drawContent();
+        if (type === 'coupon' && selectedItem) {
+            drawBigText(`${selectedItem.discount_percent}% OFF`, centerY - 240, 240);
+
+            ctx.fillStyle = 'black';
+            ctx.font = '900 80px Courier New';
+            ctx.fillText('▬ USE CODE BELOW ▬', W / 2, centerY - 40);
+
+            const codeText = selectedItem.code.toUpperCase();
+            ctx.font = '900 180px Arial Black';
+            const metrics = ctx.measureText(codeText);
+            const boxW = Math.max(900, metrics.width + 120);
+            const boxH = 260;
+
+            ctx.fillRect((W - boxW) / 2, centerY, boxW, boxH);
+            ctx.fillStyle = bgColor;
+            ctx.fillText(codeText, W / 2, centerY + 185);
+
+            ctx.fillStyle = 'black';
+            ctx.font = '900 70px Arial Black';
+            ctx.fillText('LIMITED TIME ONLY', W / 2, centerY + 380);
+
+        } else if (type === 'event' && selectedItem) {
+            drawBigText('SICK SHOW ALERT!', centerY - 450, 120, '#ff00ff');
+            ctx.fillStyle = 'black';
+            ctx.font = '900 240px Arial Black';
+            ctx.fillText(selectedItem.city.toUpperCase(), W / 2, centerY - 150);
+
+            ctx.fillRect(W / 2 - 500, centerY - 60, 1000, 200);
+            ctx.fillStyle = '#ff00ff';
+            ctx.font = '900 140px Arial Black';
+            ctx.fillText(selectedItem.date.toUpperCase(), W / 2, centerY + 90);
+
+            ctx.fillStyle = 'black';
+            ctx.font = '900 110px Arial Black';
+            ctx.fillText(selectedItem.venue.toUpperCase(), W / 2, centerY + 250);
+
+            ctx.font = '900 70px Courier New';
+            ctx.fillText('>>> GET TICKETS <<<', W / 2, centerY + 380);
+
+        } else if (type === 'merch' && selectedItem) {
+            drawBigText('NEW DROP!', centerY - 450, 140, '#ff00ff');
+            ctx.fillStyle = 'black';
+            ctx.font = '900 160px Arial Black';
+            const name = selectedItem.name.toUpperCase();
+            if (name.length > 12) {
+                const mid = Math.floor(name.length / 2);
+                const split = name.indexOf(' ', mid);
+                ctx.fillText(name.slice(0, split), W / 2, centerY - 200);
+                ctx.fillText(name.slice(split + 1), W / 2, centerY - 40);
+            } else {
+                ctx.fillText(name, W / 2, centerY - 120);
+            }
+
+            ctx.beginPath(); ctx.arc(W / 2, centerY + 200, 220, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = bgColor;
+            ctx.font = '900 180px Arial Black';
+            ctx.fillText(`${selectedItem.price}€`, W / 2, centerY + 265);
+
+            ctx.fillStyle = 'black';
+            ctx.font = '900 80px Arial Black';
+            ctx.fillText('COP IT OR DROP IT', W / 2, centerY + 480);
         } else {
-            drawContent();
+            ctx.font = '900 80px Courier New';
+            ctx.fillText('// SELECT ITEM //', W / 2, centerY);
         }
+
+        // Footer
+        const footerY = H - 120;
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, footerY - 120, W, 160);
+        ctx.fillStyle = '#ff00ff';
+        ctx.font = '900 100px Arial Black';
+        ctx.fillText('NIXXYTOXIC.COM', W / 2, footerY - 10);
     };
 
     const download = () => {
@@ -1332,7 +1378,7 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
 
     useEffect(() => {
         generateImage();
-    }, [type, format, selectedId, bgColor, data]);
+    }, [type, format, selectedId, bgImageId, bgColor, data]);
 
     return (
         <div className="flex flex-col xl:flex-row gap-8 items-start">
@@ -1388,7 +1434,23 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">4. Main Accent Color</label>
+                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">4. Background Image (Gallery)</label>
+                            <select
+                                value={bgImageId}
+                                onChange={e => setBgImageId(e.target.value)}
+                                className="w-full border-4 border-black p-3 text-lg font-bold bg-white"
+                            >
+                                <option value="">-- No Background --</option>
+                                {data.images?.map((img: any) => (
+                                    <option key={img.id} value={img.id}>
+                                        Image #{img.id}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">5. Main Accent Color</label>
                             <input
                                 type="color"
                                 value={bgColor}
