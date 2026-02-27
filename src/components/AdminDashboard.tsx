@@ -1446,149 +1446,148 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
             ctx.fillStyle = 'black';
             ctx.font = '900 80px Arial Black';
             ctx.fillText('COP IT OR DROP IT', W / 2, centerY + 480);
+        } else {
+            ctx.font = '900 80px Courier New';
+            ctx.fillText('// SELECT ITEM //', W / 2, centerY);
         }
-    } else {
-        ctx.font = '900 80px Courier New';
-    ctx.fillText('// SELECT ITEM //', W / 2, centerY);
-}
 
-// Footer
-const footerY = H - 120;
-ctx.fillStyle = 'black';
-ctx.fillRect(0, footerY - 120, W, 160);
-ctx.fillStyle = '#ff00ff';
-ctx.font = '900 100px Arial Black';
-ctx.fillText('NIXXYTOXIC.COM', W / 2, footerY - 10);
+        // Footer
+        const footerY = H - 120;
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, footerY - 120, W, 160);
+        ctx.fillStyle = '#ff00ff';
+        ctx.font = '900 100px Arial Black';
+        ctx.fillText('NIXXYTOXIC.COM', W / 2, footerY - 10);
     };
 
-const download = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const link = document.createElement('a');
-    link.download = `toxic-${type}-${format}-${Date.now()}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-};
+    const download = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const link = document.createElement('a');
+        link.download = `toxic-${type}-${format}-${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
 
-useEffect(() => {
-    generateImage();
-}, [type, format, selectedId, bgImageId, bgColor, data]);
+    useEffect(() => {
+        generateImage();
+    }, [type, format, selectedId, bgImageId, bgColor, data]);
 
-return (
-    <div className="flex flex-col xl:flex-row gap-8 items-start">
-        <div className="w-full xl:w-96 space-y-6">
-            <div className="border-4 border-black p-6 bg-white shadow-[8px_8px_0px_0px_black]">
-                <h3 className="text-2xl font-black uppercase mb-6 italic border-b-2 border-black pb-2">Promo Studio</h3>
+    return (
+        <div className="flex flex-col xl:flex-row gap-8 items-start">
+            <div className="w-full xl:w-96 space-y-6">
+                <div className="border-4 border-black p-6 bg-white shadow-[8px_8px_0px_0px_black]">
+                    <h3 className="text-2xl font-black uppercase mb-6 italic border-b-2 border-black pb-2">Promo Studio</h3>
 
-                <div className="space-y-6">
-                    <div>
-                        <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">1. Choose Format</label>
-                        <div className="flex gap-2">
-                            {(['post', 'story'] as const).map(f => (
-                                <button
-                                    key={f}
-                                    onClick={() => setFormat(f)}
-                                    className={`flex-1 py-3 border-4 border-black font-black uppercase transition-all ${format === f ? 'bg-[#ff00ff] text-white shadow-[4px_4px_0px_0px_black]' : 'bg-gray-100'}`}
-                                >
-                                    {f}
-                                </button>
-                            ))}
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">1. Choose Format</label>
+                            <div className="flex gap-2">
+                                {(['post', 'story'] as const).map(f => (
+                                    <button
+                                        key={f}
+                                        onClick={() => setFormat(f)}
+                                        className={`flex-1 py-3 border-4 border-black font-black uppercase transition-all ${format === f ? 'bg-[#ff00ff] text-white shadow-[4px_4px_0px_0px_black]' : 'bg-gray-100'}`}
+                                    >
+                                        {f}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">2. Content Type</label>
-                        <div className="flex gap-2">
-                            {(['coupon', 'event', 'merch'] as const).map(t => (
-                                <button
-                                    key={t}
-                                    onClick={() => { setType(t); setSelectedId(''); }}
-                                    className={`flex-1 py-2 border-2 border-black font-black uppercase text-xs transition-all ${type === t ? 'bg-black text-[#d9ff36]' : 'bg-gray-100 opacity-60'}`}
-                                >
-                                    {t}
-                                </button>
-                            ))}
+                        <div>
+                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">2. Content Type</label>
+                            <div className="flex gap-2">
+                                {(['coupon', 'event', 'merch'] as const).map(t => (
+                                    <button
+                                        key={t}
+                                        onClick={() => { setType(t); setSelectedId(''); }}
+                                        className={`flex-1 py-2 border-2 border-black font-black uppercase text-xs transition-all ${type === t ? 'bg-black text-[#d9ff36]' : 'bg-gray-100 opacity-60'}`}
+                                    >
+                                        {t}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">3. Select Item</label>
-                        <select
-                            value={selectedId}
-                            onChange={e => setSelectedId(e.target.value)}
-                            className="w-full border-4 border-black p-3 text-lg font-bold bg-white"
+                        <div>
+                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">3. Select Item</label>
+                            <select
+                                value={selectedId}
+                                onChange={e => setSelectedId(e.target.value)}
+                                className="w-full border-4 border-black p-3 text-lg font-bold bg-white"
+                            >
+                                <option value="">-- Choose --</option>
+                                {items.map((item: any) => (
+                                    <option key={item.id} value={item.id}>
+                                        {type === 'coupon' ? item.code : type === 'event' ? `${item.city} (${item.date})` : item.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">4. Background Image (Gallery)</label>
+                            <select
+                                value={bgImageId}
+                                onChange={e => setBgImageId(e.target.value)}
+                                className="w-full border-4 border-black p-3 text-lg font-bold bg-white"
+                            >
+                                <option value="">-- No Background --</option>
+                                {data.gallery?.map((img: any) => (
+                                    <option key={img.id} value={img.id}>
+                                        Image #{img.id}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">5. Main Accent Color</label>
+                            <input
+                                type="color"
+                                value={bgColor}
+                                onChange={e => setBgColor(e.target.value)}
+                                className="w-full h-14 border-4 border-black cursor-pointer bg-white p-1"
+                            />
+                        </div>
+
+                        <button
+                            onClick={download}
+                            className="w-full bg-black text-[#d9ff36] py-5 text-2xl font-black uppercase hover:bg-[#ff00ff] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_black] transition-all shadow-[4px_4px_0px_0px_black]"
                         >
-                            <option value="">-- Choose --</option>
-                            {items.map((item: any) => (
-                                <option key={item.id} value={item.id}>
-                                    {type === 'coupon' ? item.code : type === 'event' ? `${item.city} (${item.date})` : item.name}
-                                </option>
-                            ))}
-                        </select>
+                            GET PROMO IMAGE
+                        </button>
                     </div>
+                </div>
 
-                    <div>
-                        <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">4. Background Image (Gallery)</label>
-                        <select
-                            value={bgImageId}
-                            onChange={e => setBgImageId(e.target.value)}
-                            className="w-full border-4 border-black p-3 text-lg font-bold bg-white"
-                        >
-                            <option value="">-- No Background --</option>
-                            {data.gallery?.map((img: any) => (
-                                <option key={img.id} value={img.id}>
-                                    Image #{img.id}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">5. Main Accent Color</label>
-                        <input
-                            type="color"
-                            value={bgColor}
-                            onChange={e => setBgColor(e.target.value)}
-                            className="w-full h-14 border-4 border-black cursor-pointer bg-white p-1"
-                        />
-                    </div>
-
-                    <button
-                        onClick={download}
-                        className="w-full bg-black text-[#d9ff36] py-5 text-2xl font-black uppercase hover:bg-[#ff00ff] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_black] transition-all shadow-[4px_4px_0px_0px_black]"
-                    >
-                        GET PROMO IMAGE
-                    </button>
+                <div className="bg-[#d9ff36] border-4 border-black p-4 italic font-black text-xs uppercase">
+                    PRO TIP: Choose "Story" for temporary hype and "Post" for your permanent grid, Bitch!
                 </div>
             </div>
 
-            <div className="bg-[#d9ff36] border-4 border-black p-4 italic font-black text-xs uppercase">
-                PRO TIP: Choose "Story" for temporary hype and "Post" for your permanent grid, Bitch!
-            </div>
-        </div>
+            <div className="flex-1 w-full flex flex-col items-center">
+                <div className="md:sticky md:top-24 w-full flex flex-col items-center">
+                    <div className="mb-4 flex flex-wrap items-center justify-center gap-4">
+                        <span className="bg-black text-white px-3 py-1 text-xs font-black uppercase italic">Live Preview</span>
+                        <span className="opacity-40 text-xs font-mono">{format === 'post' ? '1080 x 1080 px' : '1080 x 1920 px'}</span>
+                    </div>
 
-        <div className="flex-1 w-full flex flex-col items-center">
-            <div className="md:sticky md:top-24 w-full flex flex-col items-center">
-                <div className="mb-4 flex flex-wrap items-center justify-center gap-4">
-                    <span className="bg-black text-white px-3 py-1 text-xs font-black uppercase italic">Live Preview</span>
-                    <span className="opacity-40 text-xs font-mono">{format === 'post' ? '1080 x 1080 px' : '1080 x 1920 px'}</span>
-                </div>
-
-                <div className={`
+                    <div className={`
                         relative border-[8px] md:border-[12px] border-black 
                         shadow-[15px_15px_0px_0px_rgba(0,0,0,0.1)] md:shadow-[30px_30px_0px_0px_rgba(0,0,0,0.1)] 
                         bg-gray-200 overflow-hidden flex items-center justify-center
                         ${format === 'story' ? 'aspect-[9/16] w-full max-w-[320px] md:max-w-[380px]' : 'aspect-square w-full max-w-[450px]'}
                     `}>
-                    <canvas
-                        ref={canvasRef}
-                        className="w-full h-full object-contain"
-                    />
+                        <canvas
+                            ref={canvasRef}
+                            className="w-full h-full object-contain"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-);
+    );
 }
 
 function ActivityTab({ items }: { items: any[] }) {
