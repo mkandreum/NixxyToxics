@@ -1176,136 +1176,138 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
         canvas.width = W;
         canvas.height = H;
 
-        // 1. Background Base
+        // --- BACKGROUND ---
         ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, W, H);
 
-        // 2. Texture / Grain Overlay
+        // Halftone Background Pattern
         ctx.save();
-        ctx.globalAlpha = 0.05;
-        for (let i = 0; i < 5000; i++) {
-            ctx.fillStyle = Math.random() > 0.5 ? 'white' : 'black';
-            ctx.fillRect(Math.random() * W, Math.random() * H, 2, 2);
+        ctx.fillStyle = 'black';
+        ctx.globalAlpha = 0.12;
+        const dotGap = 28;
+        for (let x = 0; x < W; x += dotGap) {
+            for (let y = 0; y < H; y += dotGap) {
+                const dist = Math.sqrt((x - W / 2) ** 2 + (y - H / 2) ** 2);
+                const size = Math.max(2, 14 * (1 - dist / (W * 0.8)));
+                ctx.beginPath(); ctx.arc(x, y, size, 0, Math.PI * 2); ctx.fill();
+            }
         }
         ctx.restore();
 
-        // 3. Decorative Border / Frame
+        // Decorative Scanlines
+        ctx.save();
         ctx.strokeStyle = 'black';
-        ctx.lineWidth = 40;
-        ctx.strokeRect(20, 20, W - 40, H - 40);
+        ctx.globalAlpha = 0.05;
+        ctx.lineWidth = 4;
+        for (let y = 0; y < H; y += 12) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+        }
+        ctx.restore();
 
-        // Decorative "X" corners
-        const drawX = (x: number, y: number) => {
-            ctx.beginPath();
-            ctx.lineWidth = 10;
-            ctx.moveTo(x - 30, y - 30); ctx.lineTo(x + 30, y + 30);
-            ctx.moveTo(x + 30, y - 30); ctx.lineTo(x - 30, y + 30);
-            ctx.stroke();
-        };
-        ctx.strokeStyle = '#ff00ff';
-        drawX(80, 80); drawX(W - 80, 80); drawX(80, H - 80); drawX(W - 80, H - 80);
+        // Frame
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 50;
+        ctx.strokeRect(25, 25, W - 50, H - 50);
+
 
         const drawContent = (logoImg?: HTMLImageElement) => {
-            // Header Bar
+            // Header Section
             ctx.fillStyle = 'black';
-            const headerH = format === 'post' ? 220 : 350;
+            const headerH = format === 'post' ? 240 : 380;
             ctx.fillRect(0, 0, W, headerH);
 
+            ctx.fillStyle = '#ff00ff';
+            ctx.fillRect(0, headerH, W, 20);
+
             if (logoImg) {
+                const h = format === 'post' ? 160 : 220;
                 const aspect = logoImg.width / logoImg.height;
-                const h = format === 'post' ? 140 : 180;
-                const w = h * aspect;
-                ctx.drawImage(logoImg, (W - w) / 2, (headerH - h) / 2, w, h);
+                ctx.drawImage(logoImg, (W - h * aspect) / 2, (headerH - h) / 2, h * aspect, h);
             } else {
                 ctx.fillStyle = '#ff00ff';
-                ctx.font = '900 100px Arial Black';
+                ctx.font = '900 110px Arial Black';
                 ctx.textAlign = 'center';
-                ctx.fillText('NIXXY TOXIC', W / 2, headerH / 2 + 30);
+                ctx.fillText('NIXXY TOXIC', W / 2, headerH / 2 + 40);
             }
 
             // Central Area
             const selectedItem = items.find((i: any) => i.id == selectedId);
-            const centerY = H / 2 + (format === 'post' ? 50 : 100);
+            const centerY = H / 2 + (format === 'post' ? 60 : 130);
 
-            const drawGlitchText = (text: string, y: number, size: number, color: string = 'black') => {
+            const drawBigText = (text: string, y: number, size: number, color: string = 'black', shadow: boolean = true) => {
                 ctx.save();
                 ctx.textAlign = 'center';
-                // Shadow / Glitch layer 1
-                ctx.fillStyle = '#00ffff';
-                ctx.font = `900 ${size}px Arial Black`;
-                ctx.fillText(text, W / 2 - 8, y + 4);
-                // Shadow / Glitch layer 2
-                ctx.fillStyle = '#ff00ff';
-                ctx.fillText(text, W / 2 + 8, y - 4);
-                // Main text
+                if (shadow) {
+                    ctx.fillStyle = '#ff00ff';
+                    ctx.font = `900 ${size}px Arial Black`;
+                    ctx.fillText(text, W / 2 + 12, y + 10);
+                }
                 ctx.fillStyle = color;
+                ctx.font = `900 ${size}px Arial Black`;
                 ctx.fillText(text, W / 2, y);
                 ctx.restore();
             };
 
             if (type === 'coupon' && selectedItem) {
-                drawGlitchText(`${selectedItem.discount_percent}% OFF`, centerY - 150, 160);
+                drawBigText(`${selectedItem.discount_percent}% OFF`, centerY - 180, 180);
 
                 ctx.fillStyle = 'black';
-                ctx.font = 'bold 50px Courier New';
-                ctx.fillText('• USE CODE BELOW •', W / 2, centerY);
+                ctx.font = '900 60px Courier New';
+                ctx.fillText('▬ USE CODE ▬', W / 2, centerY - 25);
 
-                // Code Box
-                const boxW = 800;
-                const boxH = 200;
-                ctx.fillRect((W - boxW) / 2, centerY + 80, boxW, boxH);
+                ctx.fillRect(W / 2 - 400, centerY + 20, 800, 200);
+                ctx.fillStyle = bgColor;
+                ctx.font = '900 140px Arial Black';
+                ctx.fillText(selectedItem.code, W / 2, centerY + 165);
 
-                ctx.fillStyle = '#d9ff36';
-                ctx.font = '900 130px Arial Black';
-                ctx.fillText(selectedItem.code, W / 2, centerY + 225);
+                ctx.fillStyle = 'black';
+                ctx.font = '900 50px Arial Black';
+                ctx.fillText('ON ENTIRE SHOP', W / 2, centerY + 300);
 
             } else if (type === 'event' && selectedItem) {
-                drawGlitchText('LIVE TOUR', centerY - 250, 100, '#ff00ff');
+                drawBigText('LIVE SHOW!', centerY - 300, 100, '#ff00ff');
                 ctx.fillStyle = 'black';
                 ctx.font = '900 180px Arial Black';
-                ctx.fillText(selectedItem.city.toUpperCase(), W / 2, centerY - 20);
+                ctx.fillText(selectedItem.city.toUpperCase(), W / 2, centerY - 120);
 
-                ctx.lineWidth = 15;
-                ctx.beginPath();
-                ctx.moveTo(W / 2 - 300, centerY + 30); ctx.lineTo(W / 2 + 300, centerY + 30);
-                ctx.stroke();
-
-                ctx.font = 'bold 70px Courier New';
-                ctx.fillText(selectedItem.venue.toUpperCase(), W / 2, centerY + 120);
-
+                ctx.fillRect(W / 2 - 450, centerY - 60, 900, 160);
                 ctx.fillStyle = '#ff00ff';
-                ctx.font = '900 120px Arial Black';
-                ctx.fillText(selectedItem.date.toUpperCase(), W / 2, centerY + 250);
+                ctx.font = '900 110px Arial Black';
+                ctx.fillText(selectedItem.date.toUpperCase(), W / 2, centerY + 55);
+
+                ctx.fillStyle = 'black';
+                ctx.font = '900 80px Arial Black';
+                ctx.fillText(selectedItem.venue.toUpperCase(), W / 2, centerY + 180);
+
+                ctx.font = '900 50px Courier New';
+                ctx.fillText('GET TICKETS NOW', W / 2, centerY + 280);
 
             } else if (type === 'merch' && selectedItem) {
-                drawGlitchText('DROP ALERT!', centerY - 250, 90, '#ff00ff');
-
-                // Name
+                drawBigText('NEW DROP!', centerY - 320, 110, '#ff00ff');
                 ctx.fillStyle = 'black';
-                ctx.font = '900 110px Arial Black';
-                ctx.fillText(selectedItem.name.toUpperCase(), W / 2, centerY - 50);
+                ctx.font = '900 130px Arial Black';
+                ctx.fillText(selectedItem.name.toUpperCase(), W / 2, centerY - 120);
 
-                // Price with circle tag
-                ctx.beginPath();
-                ctx.arc(W / 2, centerY + 150, 140, 0, Math.PI * 2);
+                ctx.beginPath(); ctx.arc(W / 2, centerY + 120, 180, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = bgColor;
+                ctx.font = '900 140px Arial Black';
+                ctx.fillText(`${selectedItem.price}€`, W / 2, centerY + 175);
+
                 ctx.fillStyle = 'black';
-                ctx.fill();
-
-                ctx.fillStyle = '#d9ff36';
-                ctx.font = '900 100px Arial Black';
-                ctx.fillText(`${selectedItem.price}€`, W / 2, centerY + 185);
+                ctx.font = '900 60px Arial Black';
+                ctx.fillText('AVAILABLE NOW', W / 2, centerY + 340);
             } else {
-                ctx.font = 'bold 50px Courier New';
-                ctx.fillText('// SELECT ITEM TO GENERATE //', W / 2, centerY);
+                ctx.font = '900 55px Courier New';
+                ctx.fillText('// SELECT ITEM //', W / 2, centerY);
             }
 
-            // Footer / URL
-            const footerY = H - 100;
+            // Footer (No WWW)
+            const footerY = H - 90;
             ctx.fillStyle = 'black';
-            ctx.fillRect(0, footerY - 80, W, 100);
-            ctx.fillStyle = '#d9ff36';
-            ctx.font = 'bold 45px Courier New';
-            ctx.fillText('WWW.NIXXYTOXIC.COM', W / 2, footerY - 15);
+            ctx.fillRect(0, footerY - 90, W, 120);
+            ctx.fillStyle = '#ff00ff';
+            ctx.font = '900 70px Arial Black';
+            ctx.fillText('NIXXYTOXIC.COM', W / 2, footerY + 5);
         };
 
         if (logoUrl) {
@@ -1409,17 +1411,22 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
                 </div>
             </div>
 
-            <div className="flex-1 flex flex-col items-center">
-                <div className="sticky top-24 w-full flex flex-col items-center">
-                    <div className="mb-4 flex items-center gap-4">
-                        <span className="bg-black text-white px-3 py-1 text-xs font-black uppercase">Live Studio Preview</span>
+            <div className="flex-1 w-full flex flex-col items-center">
+                <div className="md:sticky md:top-24 w-full flex flex-col items-center">
+                    <div className="mb-4 flex flex-wrap items-center justify-center gap-4">
+                        <span className="bg-black text-white px-3 py-1 text-xs font-black uppercase italic">Live Preview</span>
                         <span className="opacity-40 text-xs font-mono">{format === 'post' ? '1080 x 1080 px' : '1080 x 1920 px'}</span>
                     </div>
 
-                    <div className={`border-[12px] border-black shadow-[30px_30px_0px_0px_rgba(0,0,0,0.1)] bg-gray-200 overflow-hidden ${format === 'story' ? 'max-h-[70vh]' : 'max-w-full'}`}>
+                    <div className={`
+                        relative border-[8px] md:border-[12px] border-black 
+                        shadow-[15px_15px_0px_0px_rgba(0,0,0,0.1)] md:shadow-[30px_30px_0px_0px_rgba(0,0,0,0.1)] 
+                        bg-gray-200 overflow-hidden flex items-center justify-center
+                        ${format === 'story' ? 'aspect-[9/16] w-full max-w-[320px] md:max-w-[380px]' : 'aspect-square w-full max-w-[450px]'}
+                    `}>
                         <canvas
                             ref={canvasRef}
-                            className={`${format === 'story' ? 'h-full w-auto' : 'w-full h-auto max-w-[500px]'}`}
+                            className="w-full h-full object-contain"
                         />
                     </div>
                 </div>
