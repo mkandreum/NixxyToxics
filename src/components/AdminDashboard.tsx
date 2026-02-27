@@ -106,7 +106,7 @@ function CustomModal({ isOpen, onClose, title, onConfirm, fields, confirmText = 
 }
 
 export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
-    const [activeTab, setActiveTab] = useState<'stats' | 'gallery' | 'events' | 'banners' | 'store' | 'orders' | 'smtp' | 'settings' | 'activity' | 'coupons'>('stats');
+    const [activeTab, setActiveTab] = useState<'stats' | 'gallery' | 'events' | 'banners' | 'store' | 'orders' | 'smtp' | 'settings' | 'activity' | 'coupons' | 'promo'>('stats');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [data, setData] = useState<any>({ gallery: [], events: [], settings: {}, banners: [], products: [], orders: [], smtp: {}, activity: [], coupons: [], stats: {} });
     const { showToast, hideToast } = useToast();
@@ -216,6 +216,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         { id: 'store', label: 'Merch', icon: ShoppingBag },
         { id: 'events', label: 'Shows', icon: Calendar },
         { id: 'coupons', label: 'Coupons', icon: CouponIcon },
+        { id: 'promo', label: 'Promo Gen', icon: Palette },
         { id: 'gallery', label: 'Gallery', icon: ImageIcon },
         { id: 'banners', label: 'Banners', icon: Megaphone },
         { id: 'activity', label: 'Logs', icon: History },
@@ -335,6 +336,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     {activeTab === 'orders' && <OrdersTab items={data.orders} onUpdate={refreshData} openConfirm={openConfirm} />}
                     {activeTab === 'smtp' && <SMTPTab smtp={data.smtp} onUpdate={refreshData} />}
                     {activeTab === 'settings' && <SettingsTab settings={data.settings} onUpdate={refreshData} />}
+                    {activeTab === 'promo' && <PromoGenTab data={data} logoUrl={data.settings.site_logo_url} />}
                 </div>
             </main>
         </div>
@@ -1150,6 +1152,188 @@ function BannersTab({ items, onUpdate, openConfirm, openForm }: { items: any[], 
                     </div>
                 </div>
             ))}
+        </div>
+    );
+}
+
+function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
+    const [type, setType] = useState<'coupon' | 'event' | 'merch'>('coupon');
+    const [selectedId, setSelectedId] = useState<number | string>('');
+    const [bgColor, setBgColor] = useState('#d9ff36');
+    const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+    const items = type === 'coupon' ? data.coupons : type === 'event' ? data.events : data.products;
+
+    const generateImage = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Clear and fill background
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Header / Logo area
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, 200);
+
+        const drawContent = (logoImg?: HTMLImageElement) => {
+            if (logoImg) {
+                const aspect = logoImg.width / logoImg.height;
+                const h = 120;
+                const w = h * aspect;
+                ctx.drawImage(logoImg, (canvas.width - w) / 2, 40, w, h);
+            } else {
+                ctx.fillStyle = '#ff00ff';
+                ctx.font = 'bold 80px Arial Black';
+                ctx.textAlign = 'center';
+                ctx.fillText('NIXXY TOXIC', canvas.width / 2, 130);
+            }
+
+            // Main Content
+            const selectedItem = items.find((i: any) => i.id == selectedId);
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+
+            if (type === 'coupon' && selectedItem) {
+                ctx.font = 'black 120px Arial Black';
+                ctx.fillText(`${selectedItem.discount_percent}% OFF`, canvas.width / 2, 500);
+                ctx.font = 'bold 60px Courier New';
+                ctx.fillText('USE CODE:', canvas.width / 2, 650);
+                ctx.fillStyle = '#ff00ff';
+                ctx.font = '900 140px Arial Black';
+                ctx.shadowColor = 'black';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 10;
+                ctx.shadowOffsetY = 10;
+                ctx.fillText(selectedItem.code, canvas.width / 2, 850);
+            } else if (type === 'event' && selectedItem) {
+                ctx.font = '900 100px Arial Black';
+                ctx.fillText('LIVE SHOW!', canvas.width / 2, 450);
+                ctx.fillStyle = '#ff00ff';
+                ctx.font = '900 120px Arial Black';
+                ctx.fillText(selectedItem.city.toUpperCase(), canvas.width / 2, 600);
+                ctx.fillStyle = 'black';
+                ctx.font = 'bold 60px Courier New';
+                ctx.fillText(selectedItem.venue.toUpperCase(), canvas.width / 2, 720);
+                ctx.font = 'bold 80px Arial Black';
+                ctx.fillText(selectedItem.date.toUpperCase(), canvas.width / 2, 850);
+            } else if (type === 'merch' && selectedItem) {
+                ctx.font = '900 80px Arial Black';
+                ctx.fillText('NEW MERCH!', canvas.width / 2, 450);
+                ctx.fillStyle = '#ff00ff';
+                ctx.font = '900 100px Arial Black';
+                ctx.fillText(selectedItem.name.toUpperCase(), canvas.width / 2, 600);
+                ctx.fillStyle = 'black';
+                ctx.font = '900 140px Arial Black';
+                ctx.fillText(`${selectedItem.price}€`, canvas.width / 2, 800);
+            } else {
+                ctx.font = 'bold 60px Arial';
+                ctx.fillText('SELECT SOMETHING TO PROMOTE, BITCH!', canvas.width / 2, 600);
+            }
+
+            // Footer
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 40px Courier New';
+            ctx.fillText('nixxytoxic.com', canvas.width / 2, 1020);
+        };
+
+        if (logoUrl) {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = logoUrl;
+            img.onload = () => drawContent(img);
+            img.onerror = () => drawContent();
+        } else {
+            drawContent();
+        }
+    };
+
+    const download = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const link = document.createElement('a');
+        link.download = `promo-${type}-${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
+
+    useEffect(() => {
+        generateImage();
+    }, [type, selectedId, bgColor, data]);
+
+    return (
+        <div className="flex flex-col lg:flex-row gap-8">
+            <div className="flex-1 space-y-8">
+                <div className="border-4 border-black p-6 bg-white shadow-[8px_8px_0px_0px_black]">
+                    <h3 className="text-2xl font-black uppercase mb-6 italic">Configuration</h3>
+
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">Promote What?</label>
+                            <div className="flex gap-2">
+                                {(['coupon', 'event', 'merch'] as const).map(t => (
+                                    <button
+                                        key={t}
+                                        onClick={() => { setType(t); setSelectedId(''); }}
+                                        className={`flex-1 py-3 border-4 border-black font-black uppercase transition-all ${type === t ? 'bg-black text-[#d9ff36]' : 'bg-gray-100'}`}
+                                    >
+                                        {t}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">Select Item</label>
+                            <select
+                                value={selectedId}
+                                onChange={e => setSelectedId(e.target.value)}
+                                className="w-full border-4 border-black p-3 text-xl font-bold bg-white"
+                            >
+                                <option value="">-- Choose Item --</option>
+                                {items.map((item: any) => (
+                                    <option key={item.id} value={item.id}>
+                                        {type === 'coupon' ? item.code : type === 'event' ? `${item.city} (${item.date})` : item.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">Background Color</label>
+                            <input
+                                type="color"
+                                value={bgColor}
+                                onChange={e => setBgColor(e.target.value)}
+                                className="w-full h-12 border-4 border-black cursor-pointer"
+                            />
+                        </div>
+
+                        <button
+                            onClick={download}
+                            className="w-full bg-[#ff00ff] text-white py-4 text-2xl font-black uppercase hover:bg-black transition-all shadow-[6px_6px_0px_0px_#000]"
+                        >
+                            Download for Insta
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="lg:w-[600px] flex flex-col items-center">
+                <p className="text-xs font-black uppercase mb-2 opacity-40 font-mono">Live Preview (1080x1080)</p>
+                <div className="border-8 border-black shadow-[20px_20px_0px_0px_#ff00ff] bg-black max-w-full">
+                    <canvas
+                        ref={canvasRef}
+                        width={1080}
+                        height={1080}
+                        className="max-w-full h-auto"
+                    />
+                </div>
+            </div>
         </div>
     );
 }
