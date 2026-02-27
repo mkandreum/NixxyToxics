@@ -9,6 +9,8 @@ interface Product {
   price: number;
   image_url: string;
   description: string;
+  stock?: number;
+  badge?: string;
 }
 
 export default function Store() {
@@ -21,6 +23,7 @@ export default function Store() {
   // Checkout form state
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [couponCode, setCouponCode] = useState("");
 
   useEffect(() => {
     fetch('/api/products')
@@ -67,8 +70,9 @@ export default function Store() {
         body: JSON.stringify({
           customer_name: customerName,
           customer_email: customerEmail,
-          items: cart.map(i => ({ name: i.product.name, price: i.product.price, quantity: i.quantity })),
-          total
+          items: cart.map(i => ({ id: i.product.id, name: i.product.name, price: i.product.price, quantity: i.quantity })),
+          total,
+          coupon_code: couponCode
         })
       });
 
@@ -80,6 +84,9 @@ export default function Store() {
         setIsCartOpen(false);
         setCustomerName("");
         setCustomerEmail("");
+        setCouponCode("");
+      } else {
+        showToast(data.error || "Error processing order", "error");
       }
     } catch (err) {
       showToast("Error processing order", "error");
@@ -115,7 +122,12 @@ export default function Store() {
                     {prod.badge}
                   </div>
                 )}
-                <img src={prod.image_url} alt={prod.name} className="max-h-full object-contain group-hover:scale-110 transition-transform duration-500" />
+                {prod.stock === 0 && (
+                  <div className="absolute inset-0 z-20 bg-black/60 flex items-center justify-center rotate-[-15deg]">
+                    <span className="bg-red-500 text-white text-4xl font-black px-6 py-2 border-4 border-white shadow-[8px_8px_0px_0px_#000]">SOLD OUT</span>
+                  </div>
+                )}
+                <img src={prod.image_url} alt={prod.name} className={`max-h-full object-contain group-hover:scale-110 transition-transform duration-500 ${prod.stock === 0 ? 'grayscale opacity-50' : ''}`} />
               </div>
               <div className="p-8 flex flex-col flex-1 gap-4 border-t-4 border-black">
                 <div className="flex justify-between items-start">
@@ -125,9 +137,10 @@ export default function Store() {
                 <p className="text-lg opacity-60 font-bold uppercase">{prod.description || "Limited edition toxic merch. Wear it or leave it."}</p>
                 <button
                   onClick={() => addToCart(prod)}
-                  className="mt-auto w-full bg-black text-[#d9ff36] py-4 text-2xl uppercase font-black hover:bg-[#ff00ff] hover:text-white transition-colors flex items-center justify-center gap-4"
+                  disabled={prod.stock === 0}
+                  className="mt-auto w-full bg-black text-[#d9ff36] py-4 text-2xl uppercase font-black hover:bg-[#ff00ff] hover:text-white transition-colors flex items-center justify-center gap-4 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed"
                 >
-                  <Plus size={24} /> Add To Cart
+                  <Plus size={24} /> {prod.stock === 0 ? 'SOLD OUT' : 'Add To Cart'}
                 </button>
               </div>
             </motion.div>
@@ -241,6 +254,10 @@ export default function Store() {
                 <div className="space-y-1 md:space-y-2">
                   <label className="text-lg md:text-xl font-black uppercase">Your Email</label>
                   <input required type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border-4 border-black p-3 md:p-4 text-lg md:text-2xl outline-none focus:bg-white" placeholder="YOU@TOXIC.COM" />
+                </div>
+                <div className="space-y-1 md:space-y-2">
+                  <label className="text-lg md:text-xl font-black uppercase">Coupon Code</label>
+                  <input type="text" value={couponCode} onChange={e => setCouponCode(e.target.value)} className="w-full border-4 border-black p-3 md:p-4 text-lg md:text-2xl outline-none focus:bg-white" placeholder="TOXIC20" />
                 </div>
                 <div className="p-6 bg-black text-[#d9ff36] border-4 border-white mt-8">
                   <p className="text-xl font-bold uppercase mb-2">Notice:</p>

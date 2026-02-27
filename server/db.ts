@@ -172,6 +172,41 @@ if (smtpCount.count === 0) {
     db.exec("ALTER TABLE gallery ADD COLUMN sort_order INTEGER DEFAULT 0");
     db.exec("UPDATE gallery SET sort_order = id");
   }
+
+  // Migration for products table - STOCK
+  const prodColumnsUpdated = db.prepare("PRAGMA table_info(products)").all() as any[];
+  const prodColumnNamesUpdated = prodColumnsUpdated.map(c => c.name);
+  if (!prodColumnNamesUpdated.includes('stock')) {
+    db.exec("ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT -1"); // -1 = unlimited
+  }
+
+  // Migration for orders table - DISCOUNTS
+  const orderColumnsUpdated = db.prepare("PRAGMA table_info(orders)").all() as any[];
+  const orderColumnNamesUpdated = orderColumnsUpdated.map(c => c.name);
+  if (!orderColumnNamesUpdated.includes('discount_applied')) {
+    db.exec("ALTER TABLE orders ADD COLUMN discount_applied REAL DEFAULT 0");
+  }
 }
+
+// Activity Logs Table
+db.exec(`
+  CREATE TABLE IF NOT EXISTS activity_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    action TEXT NOT NULL,
+    details TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
+// Coupons Table
+db.exec(`
+  CREATE TABLE IF NOT EXISTS coupons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL UNIQUE,
+    discount_percent INTEGER DEFAULT 0,
+    active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
 
 export default db;

@@ -15,6 +15,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'nixxy-toxic-secret-key';
 
 app.use(express.json());
 
+const logActivity = (action: string, details: string) => {
+    try {
+        db.prepare('INSERT INTO activity_logs (action, details) VALUES (?, ?)').run(action, details);
+    } catch (err) {
+        console.error("Logging error:", err);
+    }
+};
+
 // Ensure directories exist
 const dataDir = path.join(__dirname, '../data');
 const uploadsDir = path.join(__dirname, '../uploads');
@@ -107,6 +115,7 @@ app.post('/api/gallery', authenticate, upload.single('photo'), async (req, res) 
         const url = `/uploads/${filename}`;
         const stmt = db.prepare('INSERT INTO gallery (url, caption) VALUES (?, ?)');
         const info = stmt.run(url, req.body.caption || '');
+        logActivity('IMAGE_UPLOAD', `Uploaded new image to gallery: ${url}`);
         res.json({ id: info.lastInsertRowid, url });
     } catch (err) {
         console.error("Sharp error:", err);
@@ -128,7 +137,9 @@ app.post('/api/settings/gallery-bg', authenticate, upload.single('video'), (req,
 });
 
 app.delete('/api/gallery/:id', authenticate, (req, res) => {
+    const item = db.prepare('SELECT url FROM gallery WHERE id = ?').get(req.params.id) as any;
     db.prepare('DELETE FROM gallery WHERE id = ?').run(req.params.id);
+    logActivity('IMAGE_DELETE', `Deleted image: ${item?.url}`);
     res.sendStatus(200);
 });
 
@@ -143,6 +154,7 @@ app.post('/api/events', authenticate, (req, res) => {
         const { date, city, venue, ticket_price, buy_url, tickets_available } = req.body;
         const stmt = db.prepare('INSERT INTO events (date, city, venue, ticket_price, buy_url, tickets_available) VALUES (?, ?, ?, ?, ?, ?)');
         const info = stmt.run(date, city, venue, ticket_price || 0, buy_url || '', tickets_available || 100);
+        logActivity('EVENT_CREATE', `Created show in ${city} on ${date}`);
         res.json({ id: info.lastInsertRowid });
     } catch (err) {
         console.error("Error creating event:", err);
@@ -156,7 +168,20 @@ app.get('/api/events/:id/attendees', authenticate, (req, res) => {
 });
 
 app.delete('/api/events/:id', authenticate, (req, res) => {
+    const item = db.prepare('SELECT city, date FROM events WHERE id = ?').get(req.params.id) as any;
     db.prepare('DELETE FROM events WHERE id = ?').run(req.params.id);
+    logActivity('EVENT_DELETE', `Deleted show: ${item?.city} on ${item?.date}`);
+    res.sendStatus(200);
+});
+
+app.patch('/api/events/:id', authenticate, (req, res) => {
+    const { date, city, venue, ticket_price, buy_url, tickets_available } = req.body;
+    const stmt = db.prepare(`
+        UPDATE events 
+        SET date = ?, city = ?, venue = ?, ticket_price = ?, buy_url = ?, tickets_available = ?
+        WHERE id = ?
+    `);
+    stmt.run(date, city, venue, ticket_price, buy_url, tickets_available, req.params.id);
     res.sendStatus(200);
 });
 
@@ -181,8 +206,9 @@ app.post('/api/products', authenticate, upload.single('image'), async (req, res)
         imageUrl = `/uploads/${filename}`;
     }
 
-    const stmt = db.prepare('INSERT INTO products (name, description, price, image_url, badge) VALUES (?, ?, ?, ?, ?)');
-    const info = stmt.run(name, description, price, imageUrl, badge || '');
+    const stmt = db.prepare('INSERT INTO products (name, description, price, image_url, badge, stock) VALUES (?, ?, ?, ?, ?, ?)');
+    const info = stmt.run(name, description, price, imageUrl, badge || '', req.body.stock || -1);
+    logActivity('PRODUCT_CREATE', `Added merch: ${name} (${price}€)`);
     res.json({ id: info.lastInsertRowid });
 });
 
@@ -197,19 +223,68 @@ app.post('/api/products/reorder', authenticate, (req, res) => {
 });
 
 app.delete('/api/products/:id', authenticate, (req, res) => {
+    const item = db.prepare('SELECT name FROM products WHERE id = ?').get(req.params.id) as any;
     db.prepare('DELETE FROM products WHERE id = ?').run(req.params.id);
+    logActivity('PRODUCT_DELETE', `Deleted merch: ${item?.name}`);
+    res.sendStatus(200);
+});
+
+app.patch('/api/products/:id', authenticate, upload.single('image'), async (req, res) => {
+    const { name, price, badge } = req.body;
+    let imageUrl = req.body.image_url;
+
+    if (req.file) {
+        const filename = `product-${Date.now()}.webp`;
+        const filepath = path.join(uploadsDir, filename);
+        await sharp(req.file.buffer)
+            .webp()
+            .toFile(filepath);
+        imageUrl = `/uploads/${filename}`;
+    }
+
+    const stmt = db.prepare(`
+        UPDATE products 
+        SET name = ?, price = ?, badge = ?, image_url = ?, stock = ?
+        WHERE id = ?
+    `);
+    stmt.run(name, price, badge || '', imageUrl, req.body.stock || -1, req.params.id);
+    logActivity('PRODUCT_UPDATE', `Updated merch: ${name}`);
     res.sendStatus(200);
 });
 
 // Checkout & Orders
 app.post('/api/checkout', async (req, res) => {
-    const { customer_name, customer_email, items, total, event_id } = req.body;
+    const { customer_name, customer_email, items, total, event_id, coupon_code } = req.body;
+
+    // Check coupon
+    let discount = 0;
+    if (coupon_code) {
+        const coupon = db.prepare('SELECT * FROM coupons WHERE code = ? AND active = 1').get(coupon_code) as any;
+        if (coupon) {
+            discount = (total * coupon.discount_percent) / 100;
+        }
+    }
+
     const orderId = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-    const stmt = db.prepare('INSERT INTO orders (order_id, customer_name, customer_email, items, total, event_id) VALUES (?, ?, ?, ?, ?, ?)');
-    stmt.run(orderId, customer_name, customer_email, JSON.stringify(items), total, event_id || null);
+    // Handle Stock for merchandise (not events for now as they have generic tickets_available)
+    const productItems = items.filter((i: any) => !i.event_id);
+    for (const item of productItems) {
+        const prod = db.prepare('SELECT stock FROM products WHERE id = ?').get(item.id) as any;
+        if (prod && prod.stock !== -1) {
+            if (prod.stock < item.quantity) {
+                return res.status(400).json({ error: `Not enough stock for ${item.name}` });
+            }
+            db.prepare('UPDATE products SET stock = stock - ? WHERE id = ?').run(item.quantity, item.id);
+        }
+    }
 
-    const order = { order_id: orderId, customer_name, customer_email, items: JSON.stringify(items), total };
+    const stmt = db.prepare('INSERT INTO orders (order_id, customer_name, customer_email, items, total, event_id, discount_applied) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(orderId, customer_name, customer_email, JSON.stringify(items), total - discount, event_id || null, discount);
+
+    logActivity('ORDER_PLACE', `New order #${orderId} from ${customer_name} (${total - discount}€)`);
+
+    const order = { order_id: orderId, customer_name, customer_email, items: JSON.stringify(items), total: total - discount };
     const siteLogo = db.prepare('SELECT value FROM settings WHERE key = ?').get('site_logo_url') as any;
 
     let emailHtml = '';
@@ -224,7 +299,9 @@ app.post('/api/checkout', async (req, res) => {
         subject = `💰 TOXIC ORDER CONFIRMATION #${orderId}`;
     }
 
-    await sendEmail({ to: customer_email, subject, html: emailHtml });
+    if (process.env.SMTP_ENABLED === 'true') {
+        await sendEmail({ to: customer_email, subject, html: emailHtml });
+    }
 
     res.json({ success: true, orderId });
 });
@@ -276,7 +353,69 @@ app.post('/api/settings/hero-image', authenticate, upload.single('image'), async
     res.json({ url });
 });
 
-// Settings
+// --- STATS, LOGS & COUPONS ---
+
+app.get('/api/activity', authenticate, (req, res) => {
+    const logs = db.prepare('SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 50').all();
+    res.json(logs);
+});
+
+app.get('/api/coupons', authenticate, (req, res) => {
+    const coupons = db.prepare('SELECT * FROM coupons ORDER BY created_at DESC').all();
+    res.json(coupons);
+});
+
+app.post('/api/coupons', authenticate, (req, res) => {
+    const { code, discount_percent } = req.body;
+    try {
+        db.prepare('INSERT INTO coupons (code, discount_percent) VALUES (?, ?)').run(code, discount_percent);
+        logActivity('COUPON_CREATE', `Created coupon: ${code} (${discount_percent}%)`);
+        res.sendStatus(201);
+    } catch (err) {
+        res.status(400).send('Code already exists');
+    }
+});
+
+app.delete('/api/coupons/:id', authenticate, (req, res) => {
+    db.prepare('DELETE FROM coupons WHERE id = ?').run(req.params.id);
+    res.sendStatus(200);
+});
+
+app.get('/api/admin/stats', authenticate, (req, res) => {
+    const totalSales = db.prepare('SELECT SUM(total) as total FROM orders').get() as any;
+    const totalOrders = db.prepare('SELECT COUNT(*) as count FROM orders').get() as any;
+    const itemsCount = db.prepare('SELECT COUNT(*) as count FROM products').all() as any;
+
+    // Daily sales for chart
+    const dailySales = db.prepare(`
+        SELECT date(created_at) as date, SUM(total) as amount 
+        FROM orders 
+        GROUP BY date(created_at) 
+        ORDER BY date ASC 
+        LIMIT 30
+    `).all();
+
+    // Top products
+    const orders = db.prepare('SELECT items FROM orders').all() as any[];
+    const productStats: any = {};
+    orders.forEach(o => {
+        const items = JSON.parse(o.items);
+        items.forEach((item: any) => {
+            if (!item.event_id) {
+                productStats[item.name] = (productStats[item.name] || 0) + item.quantity;
+            }
+        });
+    });
+
+    res.json({
+        totalRevenue: totalSales?.total || 0,
+        orderCount: totalOrders?.count || 0,
+        productCount: itemsCount?.count || 0,
+        dailySales,
+        productStats: Object.entries(productStats).map(([name, qty]) => ({ name, qty }))
+    });
+});
+
 app.get('/api/settings', (req, res) => {
     const settings = db.prepare('SELECT * FROM settings').all();
     const settingsObj = settings.reduce((acc: any, curr: any) => {

@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from "motion/react";
 import {
     LayoutDashboard, ImageIcon, Calendar, Settings, LogOut,
     Plus, Trash2, Save, Upload, Megaphone, ShoppingBag,
-    Mail, Ticket, CheckCircle, Clock, X, Users, ArrowUp, ArrowDown, Star, Check
+    Mail, Ticket, CheckCircle, Clock, X, Users, ArrowUp, ArrowDown, Star, Check, Edit,
+    History, Ticket as CouponIcon, BarChart3
 } from "lucide-react";
 import { useToast } from "./Toast";
 
@@ -32,7 +33,7 @@ interface CustomModalProps {
     onClose: () => void;
     title: string;
     onConfirm: (data?: any) => void;
-    fields?: { key: string, label: string, type: string, placeholder?: string }[];
+    fields?: { key: string, label: string, type: string, placeholder?: string, value?: any }[];
     confirmText?: string;
 }
 
@@ -40,8 +41,16 @@ function CustomModal({ isOpen, onClose, title, onConfirm, fields, confirmText = 
     const [formData, setFormData] = useState<any>({});
 
     useEffect(() => {
-        if (isOpen) setFormData({});
-    }, [isOpen]);
+        if (isOpen && fields) {
+            const initial: any = {};
+            fields.forEach(f => {
+                if (f.value !== undefined) initial[f.key] = f.value;
+            });
+            setFormData(initial);
+        } else if (isOpen) {
+            setFormData({});
+        }
+    }, [isOpen, fields]);
 
     if (!isOpen) return null;
 
@@ -97,9 +106,9 @@ function CustomModal({ isOpen, onClose, title, onConfirm, fields, confirmText = 
 }
 
 export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
-    const [activeTab, setActiveTab] = useState<'stats' | 'gallery' | 'events' | 'banners' | 'store' | 'orders' | 'smtp' | 'settings'>('stats');
+    const [activeTab, setActiveTab] = useState<'stats' | 'gallery' | 'events' | 'banners' | 'store' | 'orders' | 'smtp' | 'settings' | 'activity' | 'coupons'>('stats');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [data, setData] = useState<any>({ gallery: [], events: [], settings: {}, banners: [], products: [], orders: [], smtp: {} });
+    const [data, setData] = useState<any>({ gallery: [], events: [], settings: {}, banners: [], products: [], orders: [], smtp: {}, activity: [], coupons: [], stats: {} });
     const { showToast, hideToast } = useToast();
 
     // Modal State
@@ -123,19 +132,19 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
     const refreshData = async () => {
         try {
-            const [gRes, eRes, sRes, bRes, pRes, oRes, smRes] = await Promise.all([
-                fetch('/api/gallery'),
-                fetch('/api/events'),
-                fetch('/api/settings'),
-                fetch('/api/banners'),
-                fetch('/api/products'),
-                toxicFetch('/api/orders'),
-                toxicFetch('/api/smtp')
+            const [gal, ev, sets, bans, prods, ords, smtp, activity, coupons, stats] = await Promise.all([
+                toxicFetch('/api/gallery').then(r => r.json()),
+                toxicFetch('/api/events').then(r => r.json()),
+                toxicFetch('/api/settings').then(r => r.json()),
+                toxicFetch('/api/banners').then(r => r.json()),
+                toxicFetch('/api/products').then(r => r.json()),
+                toxicFetch('/api/orders').then(r => r.json()),
+                toxicFetch('/api/smtp').then(r => r.json()),
+                toxicFetch('/api/activity').then(r => r.json()),
+                toxicFetch('/api/coupons').then(r => r.json()),
+                toxicFetch('/api/admin/stats').then(r => r.json())
             ]);
-            const [gallery, events, settings, banners, products, orders, smtp] = await Promise.all([
-                gRes.json(), eRes.json(), sRes.json(), bRes.json(), pRes.json(), oRes.json(), smRes.json()
-            ]);
-            setData({ gallery, events, settings, banners, products, orders, smtp });
+            setData({ gallery: gal, events: ev, settings: sets, banners: bans, products: prods, orders: ords, smtp, activity, coupons, stats });
         } catch (err) {
             console.error("Error fetching admin data:", err);
         }
@@ -144,14 +153,17 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
     useEffect(() => { refreshData(); }, []);
 
     const handleAddNew = () => {
-        if (activeTab === 'events') {
-            openForm("New Drag Show", [
+        if (activeTab === 'gallery') {
+            document.getElementById('gallery-upload-input')?.click();
+        } else if (activeTab === 'events') {
+            openForm("New Show", [
                 { key: 'city', label: 'City', type: 'text', placeholder: 'MADRID' },
                 { key: 'venue', label: 'Venue', type: 'text', placeholder: 'LA RIVIERA' },
                 { key: 'date', label: 'Date', type: 'text', placeholder: 'OCT 31' },
                 { key: 'ticket_price', label: 'Price (EUR)', type: 'number', placeholder: '15.00' },
+                { key: 'tickets_available', label: 'Stock (Tickets)', type: 'number', placeholder: '100', value: 100 }
             ], async (formData) => {
-                const toastId = showToast("Adding Drag Show...", "loading");
+                const toastId = showToast("Adding Show...", "loading");
                 try {
                     await toxicFetch('/api/events', {
                         method: 'POST',
@@ -159,7 +171,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         body: JSON.stringify(formData)
                     });
                     refreshData();
-                    showToast("Drag Show added!", "success");
+                    showToast("Show added!", "success");
                 } catch (err: any) {
                     showToast(err.message || "Failed to add show", "error");
                 } finally {
@@ -177,23 +189,37 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     body: JSON.stringify({ ...formData, bg_color: '#d9ff36', text_color: 'black' })
                 });
                 refreshData();
-                showToast("Banner created!", "success");
+                showToast("Banner added!", "success");
             });
-        } else if (activeTab === 'gallery') {
-            document.getElementById('gallery-upload-input')?.click();
         } else if (activeTab === 'store') {
             document.getElementById('product-upload-input')?.click();
+        } else if (activeTab === 'coupons') {
+            openForm("New Coupon", [
+                { key: 'code', label: 'Promo Code', type: 'text', placeholder: 'TOXIC20' },
+                { key: 'discount_percent', label: 'Discount %', type: 'number', placeholder: '20' }
+            ], async (formData) => {
+                showToast("Creating coupon...", "loading");
+                await toxicFetch('/api/coupons', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                refreshData();
+                showToast("Coupon created!", "success");
+            });
         }
     };
 
     const tabs = [
-        { id: 'stats', label: 'Overview', icon: LayoutDashboard },
+        { id: 'stats', label: 'Stats', icon: BarChart3 },
+        { id: 'orders', label: 'Orders', icon: ShoppingBag },
+        { id: 'store', label: 'Merch', icon: ShoppingBag },
+        { id: 'events', label: 'Shows', icon: Calendar },
+        { id: 'coupons', label: 'Coupons', icon: CouponIcon },
         { id: 'gallery', label: 'Gallery', icon: ImageIcon },
-        { id: 'events', label: 'Drag Shows', icon: Ticket },
-        { id: 'store', label: 'Store', icon: ShoppingBag },
-        { id: 'orders', label: 'Orders', icon: Clock },
         { id: 'banners', label: 'Banners', icon: Megaphone },
-        { id: 'smtp', label: 'SMTP Config', icon: Mail },
+        { id: 'activity', label: 'Logs', icon: History },
+        { id: 'smtp', label: 'Email', icon: Mail },
         { id: 'settings', label: 'Settings', icon: Settings },
     ];
 
@@ -299,9 +325,11 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 </header>
 
                 <div className="grid gap-8">
-                    {activeTab === 'stats' && <OverviewTab data={data} />}
+                    {activeTab === 'stats' && <OverviewTab data={data.stats} />}
+                    {activeTab === 'activity' && <ActivityTab items={data.activity} />}
+                    {activeTab === 'coupons' && <CouponsTab items={data.coupons} onUpdate={refreshData} openForm={openForm} openConfirm={openConfirm} />}
                     {activeTab === 'gallery' && <GalleryTab items={data.gallery} onUpdate={refreshData} openConfirm={openConfirm} />}
-                    {activeTab === 'events' && <EventsTab items={data.events} onUpdate={refreshData} openConfirm={openConfirm} />}
+                    {activeTab === 'events' && <EventsTab items={data.events} onUpdate={refreshData} openConfirm={openConfirm} openForm={openForm} />}
                     {activeTab === 'banners' && <BannersTab items={data.banners} onUpdate={refreshData} openConfirm={openConfirm} />}
                     {activeTab === 'store' && <StoreTab items={data.products} onUpdate={refreshData} openConfirm={openConfirm} openForm={openForm} />}
                     {activeTab === 'orders' && <OrdersTab items={data.orders} onUpdate={refreshData} openConfirm={openConfirm} />}
@@ -314,19 +342,101 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 }
 
 function OverviewTab({ data }: { data: any }) {
+    if (!data) return <p className="text-center py-20 opacity-40 uppercase font-black">Loading stats...</p>;
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {[
-                { label: 'Photos', value: data.gallery?.length || 0, color: 'bg-green-400' },
-                { label: 'Drag Shows', value: data.events?.length || 0, color: 'bg-purple-400' },
-                { label: 'Products', value: data.products?.length || 0, color: 'bg-[#d9ff36]' },
-                { label: 'Orders', value: data.orders?.length || 0, color: 'bg-blue-400' },
-            ].map((stat, i) => (
-                <div key={i} className={`border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000] ${stat.color}`}>
-                    <p className="text-xl uppercase font-black mb-2">{stat.label}</p>
-                    <p className="text-6xl font-black">{stat.value}</p>
-                </div>
-            ))}
+        <div className="space-y-12 pb-20">
+            {/* Top Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000] bg-[#d9ff36] group overflow-hidden relative">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-150 transition-transform"><BarChart3 size={100} /></div>
+                    <p className="text-xl uppercase font-black mb-2 opacity-60 relative z-10">Total Revenue</p>
+                    <p className="text-6xl font-black italic relative z-10">{data.totalRevenue?.toFixed(2) || 0}€</p>
+                </motion.div>
+                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000] bg-white text-black relative group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-150 transition-transform"><ShoppingBag size={100} /></div>
+                    <p className="text-xl uppercase font-black mb-2 opacity-40 relative z-10">Total Orders</p>
+                    <p className="text-6xl font-black relative z-10">{data.orderCount || 0}</p>
+                </motion.div>
+                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000] bg-black text-[#d9ff36] relative group overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-150 transition-transform"><Ticket size={100} /></div>
+                    <p className="text-xl uppercase font-black mb-2 opacity-60 relative z-10">Active Merch</p>
+                    <p className="text-6xl font-black relative z-10">{data.productCount || 0}</p>
+                </motion.div>
+            </div>
+
+            {/* Daily Sales Chart */}
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
+                {data.dailySales && data.dailySales.length > 0 ? (
+                    <div className="border-8 border-black p-4 md:p-8 bg-white shadow-[12px_12px_0px_0px_black] overflow-x-auto">
+                        <div className="flex justify-between items-center mb-8 border-b-4 border-black pb-4">
+                            <h3 className="text-2xl font-black uppercase italic">Sales Pulse (Last 7 Days)</h3>
+                            <span className="bg-[#ff00ff] text-white px-3 py-1 text-xs font-black uppercase">Live Data</span>
+                        </div>
+                        <div className="flex items-end gap-2 md:gap-4 h-64 min-w-[600px] border-b-4 border-l-4 border-black pl-4 mb-4">
+                            {data.dailySales.map((s: any, i: number) => {
+                                const max = Math.max(...data.dailySales.map((d: any) => d.amount));
+                                const height = max > 0 ? (s.amount / max) * 100 : 0;
+                                return (
+                                    <div key={i} className="flex-1 flex flex-col items-center group relative h-full justify-end">
+                                        <div className="absolute -top-10 bg-black text-[#d9ff36] px-3 py-1 text-sm font-black opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100 whitespace-nowrap z-10 shadow-[4px_4px_0px_0px_#ff00ff]">{s.amount}€</div>
+                                        <motion.div
+                                            initial={{ height: 0 }}
+                                            animate={{ height: `${height}%` }}
+                                            className="w-full bg-[#ff00ff] border-2 border-black hover:bg-black transition-all cursor-pointer relative"
+                                            whileHover={{ scaleX: 1.1 }}
+                                        />
+                                        <span className="text-[10px] uppercase font-black mt-4 rotate-45 md:rotate-0 whitespace-nowrap mb-2">{new Date(s.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="border-8 border-black p-20 bg-gray-50 text-center opacity-30 text-3xl font-black uppercase">No Sales History Yet</div>
+                )}
+            </motion.div>
+
+            {/* Bottom Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Best Sellers */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="border-4 border-black p-8 bg-white shadow-[12px_12px_0px_0px_black]">
+                    <h3 className="text-3xl font-black uppercase mb-8 italic border-b-4 border-black pb-4 flex items-center gap-4">
+                        <Star className="text-[#ff00ff]" fill="currentColor" /> Top Merch
+                    </h3>
+                    <div className="space-y-4">
+                        {data.productStats && data.productStats.length > 0 ? (
+                            data.productStats.sort((a: any, b: any) => b.qty - a.qty).slice(0, 5).map((p: any, i: number) => (
+                                <div key={i} className="flex items-center justify-between border-b-2 border-black pb-2 group hover:translate-x-2 transition-transform">
+                                    <span className="text-xl font-black uppercase italic group-hover:text-[#ff00ff]">{p.name}</span>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-sm font-black opacity-40">{Math.round((p.qty / data.orderCount) * 100 || 0)}% of orders</span>
+                                        <span className="bg-black text-[#d9ff36] px-4 py-1 font-mono font-black shadow-[4px_4px_0px_0px_#ff00ff]">{p.qty} SOLD</span>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="opacity-30 uppercase font-black text-center py-10 italic">No sales data recorded</p>
+                        )}
+                    </div>
+                </motion.div>
+
+                {/* Performance Summary */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="border-4 border-black p-8 bg-[#d9ff36] shadow-[12px_12px_0px_0px_black] flex flex-col justify-center text-center">
+                    <h3 className="text-4xl font-black uppercase mb-4 italic tracking-tighter">Toxic Performance</h3>
+                    <p className="text-xl font-bold uppercase mb-8 opacity-60">Your empire is growing, Bitch!</p>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="border-4 border-black p-4 bg-white">
+                            <p className="text-xs font-black uppercase opacity-40">Avg Order</p>
+                            <p className="text-3xl font-black italic">{(data.totalRevenue / data.orderCount || 0).toFixed(2)}€</p>
+                        </div>
+                        <div className="border-4 border-black p-4 bg-white">
+                            <p className="text-xs font-black uppercase opacity-40">Top Sale</p>
+                            <p className="text-3xl font-black italic">{Math.max(...(data.dailySales?.map((s: any) => s.amount) || [0])).toFixed(2)}€</p>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
         </div>
     );
 }
@@ -408,7 +518,7 @@ function GalleryTab({ items, onUpdate, openConfirm }: { items: any[], onUpdate: 
     );
 }
 
-function EventsTab({ items, onUpdate, openConfirm }: { items: any[], onUpdate: () => void, openConfirm: any }) {
+function EventsTab({ items, onUpdate, openConfirm, openForm }: { items: any[], onUpdate: () => void, openConfirm: any, openForm: any }) {
     const { showToast, hideToast } = useToast();
     const [attendees, setAttendees] = useState<{ isOpen: boolean, list: any[], title: string }>({ isOpen: false, list: [], title: '' });
 
@@ -434,7 +544,12 @@ function EventsTab({ items, onUpdate, openConfirm }: { items: any[], onUpdate: (
                         <div>
                             <p className="text-2xl font-black uppercase">{event.city}</p>
                             <p className="text-xl uppercase opacity-60 font-bold">{event.venue}</p>
-                            <p className="text-lg bg-[#ff00ff] text-white px-2 mt-1 inline-block uppercase font-black">{event.ticket_price}€ TICKETS</p>
+                            <div className="flex gap-2 flex-wrap mt-1">
+                                <p className="text-lg bg-[#ff00ff] text-white px-2 inline-block uppercase font-black">{event.ticket_price}€</p>
+                                <p className={`text-lg px-2 inline-block uppercase font-black border-2 border-black ${event.tickets_available <= 0 ? 'bg-red-500 text-white' : 'bg-[#d9ff36] text-black'}`}>
+                                    {event.tickets_available <= 0 ? 'SOLD OUT' : `${event.tickets_available} LEFT`}
+                                </p>
+                            </div>
                         </div>
                     </div>
                     <div className="flex gap-4">
@@ -443,6 +558,30 @@ function EventsTab({ items, onUpdate, openConfirm }: { items: any[], onUpdate: (
                             onClick={() => viewAttendees(event)}
                         >
                             <Users size={24} /> <span className="hidden md:inline">Attendees</span>
+                        </button>
+                        <button
+                            className="p-4 border-4 border-black hover:bg-black hover:text-[#d9ff36] transition-colors"
+                            onClick={() => {
+                                openForm("Edit Show", [
+                                    { key: 'date', label: 'Date', type: 'text', placeholder: 'FEB 24', value: event.date },
+                                    { key: 'city', label: 'City', type: 'text', placeholder: 'MADRID', value: event.city },
+                                    { key: 'venue', label: 'Venue', type: 'text', placeholder: 'SALA COOL', value: event.venue },
+                                    { key: 'ticket_price', label: 'Price (EUR)', type: 'number', value: event.ticket_price },
+                                    { key: 'buy_url', label: 'Buy URL', type: 'text', value: event.buy_url },
+                                    { key: 'tickets_available', label: 'Stock (Tickets)', type: 'number', value: event.tickets_available }
+                                ], async (data) => {
+                                    showToast("Saving...", "loading");
+                                    await toxicFetch(`/api/events/${event.id}`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify(data)
+                                    });
+                                    onUpdate();
+                                    showToast("Show updated!", "success");
+                                });
+                            }}
+                        >
+                            <Edit size={24} />
                         </button>
                         <button className="p-4 border-4 border-black hover:bg-red-500 hover:text-white transition-colors" onClick={() => {
                             openConfirm("Delete Show?", async () => {
@@ -504,6 +643,7 @@ function StoreTab({ items, onUpdate, openConfirm, openForm }: { items: any[], on
         openForm("Add Product", [
             { key: 'name', label: 'Product Name', type: 'text', placeholder: 'TOXIC HOODIE' },
             { key: 'price', label: 'Price (EUR)', type: 'number', placeholder: '25.00' },
+            { key: 'stock', label: 'Stock (-1 for UNLIMITED)', type: 'number', placeholder: '50', value: -1 },
             { key: 'badge', label: 'Badge (WOW, TOOXICO, ⚡, 🔥)', type: 'text', placeholder: '🔥 TOOXICO' }
         ], async (formData) => {
             const toastId = showToast("Uploading product...", "loading");
@@ -511,6 +651,7 @@ function StoreTab({ items, onUpdate, openConfirm, openForm }: { items: any[], on
             fd.append('image', file);
             fd.append('name', formData.name);
             fd.append('price', formData.price);
+            fd.append('stock', formData.stock);
             fd.append('badge', formData.badge || '');
 
             try {
@@ -571,6 +712,34 @@ function StoreTab({ items, onUpdate, openConfirm, openForm }: { items: any[], on
                         <div className="flex gap-2">
                             <button onClick={() => moveItem(i, 'up')} disabled={i === 0} className="flex-1 p-2 border-2 border-black hover:bg-[#d9ff36] disabled:opacity-20 flex justify-center"><ArrowUp size={20} /></button>
                             <button onClick={() => moveItem(i, 'down')} disabled={i === items.length - 1} className="flex-1 p-2 border-2 border-black hover:bg-[#d9ff36] disabled:opacity-20 flex justify-center"><ArrowDown size={20} /></button>
+                            <button
+                                onClick={() => {
+                                    openForm("Edit Product", [
+                                        { key: 'name', label: 'Product Name', type: 'text', value: prod.name },
+                                        { key: 'price', label: 'Price (EUR)', type: 'number', value: prod.price },
+                                        { key: 'stock', label: 'Stock (-1 = unlimited)', type: 'number', value: prod.stock },
+                                        { key: 'badge', label: 'Badge', type: 'text', value: prod.badge }
+                                    ], async (data) => {
+                                        showToast("Saving...", "loading");
+                                        const fd = new FormData();
+                                        fd.append('name', data.name);
+                                        fd.append('price', data.price);
+                                        fd.append('stock', data.stock);
+                                        fd.append('badge', data.badge || '');
+                                        fd.append('image_url', prod.image_url); // Keep existing UI image URL
+
+                                        await toxicFetch(`/api/products/${prod.id}`, {
+                                            method: 'PATCH',
+                                            body: fd
+                                        });
+                                        onUpdate();
+                                        showToast("Product updated!", "success");
+                                    });
+                                }}
+                                className="flex-1 p-2 border-2 border-black hover:bg-black hover:text-[#d9ff36] flex justify-center"
+                            >
+                                <Edit size={20} />
+                            </button>
                             <button onClick={() => handleDelete(prod.id)} className="flex-1 p-2 border-2 border-black hover:bg-red-500 hover:text-white flex justify-center"><Trash2 size={20} /></button>
                         </div>
                     </div>
@@ -621,6 +790,7 @@ function OrdersTab({ items, onUpdate, openConfirm }: { items: any[], onUpdate: (
                             </div>
                             <div className="text-right">
                                 <p className="text-3xl font-black text-[#ff00ff]">{order.total}€</p>
+                                {order.discount_applied > 0 && <p className="text-green-600 font-bold uppercase text-xs">Discounted -{order.discount_applied}€</p>}
                                 <p className="uppercase font-bold text-xs">{new Date(order.created_at).toLocaleString()}</p>
                             </div>
                         </div>
@@ -950,6 +1120,70 @@ function BannersTab({ items, onUpdate, openConfirm }: { items: any[], onUpdate: 
                     </div>
                 </div>
             ))}
+        </div>
+    );
+}
+
+function ActivityTab({ items }: { items: any[] }) {
+    return (
+        <div className="border-8 border-black bg-white shadow-[12px_12px_0px_0px_black] overflow-hidden">
+            <div className="bg-black text-[#d9ff36] p-4 text-2xl font-black uppercase italic">Toxic History</div>
+            <div className="divide-y-4 divide-black max-h-[600px] overflow-y-auto">
+                {items.length === 0 ? (
+                    <p className="p-8 text-center opacity-40 uppercase font-black">No activity recorded yet...</p>
+                ) : (
+                    items.map((log) => (
+                        <div key={log.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50">
+                            <div>
+                                <span className={`inline-block px-2 py-1 text-xs font-black uppercase mb-2 ${log.action.includes('DELETE') ? 'bg-red-500 text-white' :
+                                    log.action.includes('CREATE') ? 'bg-green-400 text-black' :
+                                        'bg-blue-400 text-black'
+                                    }`}>
+                                    {log.action}
+                                </span>
+                                <p className="text-xl font-bold uppercase">{log.details}</p>
+                            </div>
+                            <span className="text-sm font-mono opacity-50 font-black whitespace-nowrap">
+                                {new Date(log.created_at).toLocaleString()}
+                            </span>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+}
+
+function CouponsTab({ items, onUpdate, openForm, openConfirm }: { items: any[], onUpdate: () => void, openForm: any, openConfirm: any }) {
+    const { showToast } = useToast();
+
+    const handleDelete = (id: number) => {
+        openConfirm("Burn this coupon?", async () => {
+            showToast("Burning...", "loading");
+            await toxicFetch(`/api/coupons/${id}`, { method: 'DELETE' });
+            onUpdate();
+            showToast("Coupon burned!", "success");
+        });
+    };
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {items.map((coupon) => (
+                <div key={coupon.id} className="border-4 border-black p-6 bg-[#ff00ff] text-white shadow-[8px_8px_0px_0px_black] relative overflow-hidden group">
+                    <div className="absolute -right-8 -top-8 w-24 h-24 bg-white opacity-10 rotate-45 group-hover:scale-150 transition-transform"></div>
+                    <div className="relative z-10">
+                        <p className="text-4xl font-black uppercase italic tracking-tighter mb-2">{coupon.code}</p>
+                        <p className="text-xl font-black opacity-80">{coupon.discount_percent}% DISCOUNT</p>
+                        <div className="mt-8 flex justify-between items-end">
+                            <span className="text-xs font-mono">CREATED: {new Date(coupon.created_at).toLocaleDateString()}</span>
+                            <button onClick={() => handleDelete(coupon.id)} className="p-3 bg-white text-red-500 border-2 border-black hover:bg-black transition-colors shadow-[4px_4px_0px_0px_black]">
+                                <Trash2 size={24} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ))}
+            {items.length === 0 && <p className="col-span-full py-10 opacity-30 text-center uppercase font-black italic">No coupons yet, generous bitch!</p>}
         </div>
     );
 }
