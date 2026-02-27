@@ -4,7 +4,7 @@ import {
     LayoutDashboard, ImageIcon, Calendar, Settings, LogOut,
     Plus, Trash2, Save, Upload, Megaphone, ShoppingBag,
     Mail, Ticket, CheckCircle, Clock, X, Users, ArrowUp, ArrowDown, Star, Check, Edit,
-    History, Ticket as CouponIcon, BarChart3
+    History, Ticket as CouponIcon, BarChart3, Palette
 } from "lucide-react";
 import { useToast } from "./Toast";
 
