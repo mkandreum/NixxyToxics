@@ -1180,6 +1180,8 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
         // --- LAYER 0: COLOR BASE ---
         ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, W, H);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
 
         // --- LAYER 1: GALLERY BACKGROUND ---
         if (bgImageId) {
@@ -1268,6 +1270,7 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
                 const aspect = logoImg.width / logoImg.height;
                 ctx.drawImage(logoImg, (W - h * aspect) / 2, (headerH - h) / 2, h * aspect, h);
             }
+            ctx.textAlign = 'center'; // Ensure alignment is reset after potential logo loading
         } else {
             ctx.fillStyle = '#ff00ff';
             ctx.font = '900 140px Arial Black';
@@ -1296,8 +1299,19 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
             drawBigText(`${selectedItem.discount_percent}% OFF`, centerY - 240, 220);
 
             ctx.fillStyle = 'black';
-            ctx.font = '900 80px Courier New';
-            ctx.fillText('▬ USE CODE BELOW ▬', W / 2, centerY - 40);
+            ctx.textAlign = 'center';
+
+            // Scaling for the instruction text
+            let instructionText = '▬ USE CODE BELOW ▬';
+            let instSize = 80;
+            ctx.font = `900 ${instSize}px Courier New`;
+            let instMetrics = ctx.measureText(instructionText);
+            while (instMetrics.width > 1000 && instSize > 40) {
+                instSize -= 5;
+                ctx.font = `900 ${instSize}px Courier New`;
+                instMetrics = ctx.measureText(instructionText);
+            }
+            ctx.fillText(instructionText, W / 2, centerY - 40);
 
             let codeText = selectedItem.code.toUpperCase();
             let fontSize = 180;
@@ -1319,194 +1333,262 @@ function PromoGenTab({ data, logoUrl }: { data: any, logoUrl: string }) {
             ctx.fillRect((W - boxW) / 2, centerY, boxW, boxH);
             ctx.fillStyle = bgColor;
             ctx.textAlign = 'center';
-            ctx.fillText(codeText, W / 2, centerY + (boxH * 0.75));
+            ctx.fillText(codeText, W / 2, centerY + (boxH * 0.5)); // Adjusted for middle baseline
 
             ctx.fillStyle = 'black';
             ctx.font = '900 70px Arial Black';
-            ctx.fillText('LIMITED TIME ONLY', W / 2, centerY + boxH + 80);
+            ctx.fillText('LIMITED TIME ONLY', W / 2, centerY + boxH + 100);
 
         } else if (type === 'event' && selectedItem) {
             drawBigText('SICK SHOW ALERT!', centerY - 450, 120, '#ff00ff');
-            ctx.fillStyle = 'black';
-            ctx.font = '900 240px Arial Black';
-            ctx.fillText(selectedItem.city.toUpperCase(), W / 2, centerY - 150);
 
-            ctx.fillRect(W / 2 - 500, centerY - 60, 1000, 200);
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+
+            // City scaling
+            let citySize = 240;
+            ctx.font = `900 ${citySize}px Arial Black`;
+            const city = selectedItem.city.toUpperCase();
+            let cityMetrics = ctx.measureText(city);
+            while (cityMetrics.width > 1000 && citySize > 80) {
+                citySize -= 20;
+                ctx.font = `900 ${citySize}px Arial Black`;
+                cityMetrics = ctx.measureText(city);
+            }
+            ctx.fillText(city, W / 2, centerY - 150);
+
+            ctx.fillRect(W / 2 - 500, centerY - 100, 1000, 200);
             ctx.fillStyle = '#ff00ff';
             ctx.font = '900 140px Arial Black';
-            ctx.fillText(selectedItem.date.toUpperCase(), W / 2, centerY + 90);
+            ctx.fillText(selectedItem.date.toUpperCase(), W / 2, centerY);
 
             ctx.fillStyle = 'black';
-            ctx.font = '900 110px Arial Black';
-            ctx.fillText(selectedItem.venue.toUpperCase(), W / 2, centerY + 250);
+            // Venue scaling
+            let venueSize = 110;
+            ctx.font = `900 ${venueSize}px Arial Black`;
+            const venue = selectedItem.venue.toUpperCase();
+            let venueMetrics = ctx.measureText(venue);
+            while (venueMetrics.width > 1000 && venueSize > 50) {
+                venueSize -= 10;
+                ctx.font = `900 ${venueSize}px Arial Black`;
+                venueMetrics = ctx.measureText(venue);
+            }
+            ctx.fillText(venue, W / 2, centerY + 250);
 
             ctx.font = '900 70px Courier New';
             ctx.fillText('>>> GET TICKETS <<<', W / 2, centerY + 380);
 
         } else if (type === 'merch' && selectedItem) {
-            drawBigText('NEW DROP!', centerY - 450, 140, '#ff00ff');
+            drawBigText('NEW DROP!', centerY - 500, 140, '#ff00ff');
+
             ctx.fillStyle = 'black';
-            ctx.font = '900 160px Arial Black';
+            ctx.textAlign = 'center';
+
+            // Name scaling
+            let nameSize = 140;
+            ctx.font = `900 ${nameSize}px Arial Black`;
             const name = selectedItem.name.toUpperCase();
-            if (name.length > 12) {
-                const mid = Math.floor(name.length / 2);
-                const split = name.indexOf(' ', mid);
-                ctx.fillText(name.slice(0, split), W / 2, centerY - 200);
-                ctx.fillText(name.slice(split + 1), W / 2, centerY - 40);
-            } else {
-                ctx.fillText(name, W / 2, centerY - 120);
+            let nameMetrics = ctx.measureText(name);
+            while (nameMetrics.width > 900 && nameSize > 60) {
+                nameSize -= 10;
+                ctx.font = `900 ${nameSize}px Arial Black`;
+                nameMetrics = ctx.measureText(name);
+            }
+            ctx.fillText(name, W / 2, centerY - 380);
+
+            // Merch Photo
+            if (selectedItem.image_url) {
+                const merchImg = await new Promise<HTMLImageElement>((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    img.src = selectedItem.image_url;
+                    img.onload = () => resolve(img);
+                    img.onerror = () => resolve(undefined as any);
+                });
+                if (merchImg) {
+                    const imgSize = 650;
+                    const aspect = merchImg.width / merchImg.height;
+                    let dw, dh;
+                    if (aspect > 1) {
+                        dw = imgSize;
+                        dh = imgSize / aspect;
+                    } else {
+                        dh = imgSize;
+                        dw = imgSize * aspect;
+                    }
+                    ctx.save();
+                    // Draw a white background or frame for the image
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect((W - dw) / 2 - 10, centerY - 180 - 10, dw + 20, dh + 20);
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 10;
+                    ctx.strokeRect((W - dw) / 2 - 10, centerY - 180 - 10, dw + 20, dh + 20);
+
+                    ctx.drawImage(merchImg, (W - dw) / 2, centerY - 180, dw, dh);
+                    ctx.restore();
+                }
             }
 
-            ctx.beginPath(); ctx.arc(W / 2, centerY + 200, 220, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = bgColor;
-            ctx.font = '900 180px Arial Black';
-            ctx.fillText(`${selectedItem.price}€`, W / 2, centerY + 265);
+            // Price in a sticky-style badge
+            ctx.save();
+            ctx.translate(W / 2 + 300, centerY + 150);
+            ctx.rotate(0.2);
+            ctx.fillStyle = '#ff00ff';
+            ctx.beginPath(); ctx.arc(0, 0, 140, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 10;
+            ctx.stroke();
+            ctx.fillStyle = 'white';
+            ctx.font = '900 100px Arial Black';
+            ctx.fillText(`${selectedItem.price}€`, 0, 10);
+            ctx.restore();
 
             ctx.fillStyle = 'black';
             ctx.font = '900 80px Arial Black';
             ctx.fillText('COP IT OR DROP IT', W / 2, centerY + 480);
-        } else {
-            ctx.font = '900 80px Courier New';
-            ctx.fillText('// SELECT ITEM //', W / 2, centerY);
         }
+    } else {
+        ctx.font = '900 80px Courier New';
+    ctx.fillText('// SELECT ITEM //', W / 2, centerY);
+}
 
-        // Footer
-        const footerY = H - 120;
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, footerY - 120, W, 160);
-        ctx.fillStyle = '#ff00ff';
-        ctx.font = '900 100px Arial Black';
-        ctx.fillText('NIXXYTOXIC.COM', W / 2, footerY - 10);
+// Footer
+const footerY = H - 120;
+ctx.fillStyle = 'black';
+ctx.fillRect(0, footerY - 120, W, 160);
+ctx.fillStyle = '#ff00ff';
+ctx.font = '900 100px Arial Black';
+ctx.fillText('NIXXYTOXIC.COM', W / 2, footerY - 10);
     };
 
-    const download = () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const link = document.createElement('a');
-        link.download = `toxic-${type}-${format}-${Date.now()}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-    };
+const download = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `toxic-${type}-${format}-${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+};
 
-    useEffect(() => {
-        generateImage();
-    }, [type, format, selectedId, bgImageId, bgColor, data]);
+useEffect(() => {
+    generateImage();
+}, [type, format, selectedId, bgImageId, bgColor, data]);
 
-    return (
-        <div className="flex flex-col xl:flex-row gap-8 items-start">
-            <div className="w-full xl:w-96 space-y-6">
-                <div className="border-4 border-black p-6 bg-white shadow-[8px_8px_0px_0px_black]">
-                    <h3 className="text-2xl font-black uppercase mb-6 italic border-b-2 border-black pb-2">Promo Studio</h3>
+return (
+    <div className="flex flex-col xl:flex-row gap-8 items-start">
+        <div className="w-full xl:w-96 space-y-6">
+            <div className="border-4 border-black p-6 bg-white shadow-[8px_8px_0px_0px_black]">
+                <h3 className="text-2xl font-black uppercase mb-6 italic border-b-2 border-black pb-2">Promo Studio</h3>
 
-                    <div className="space-y-6">
-                        <div>
-                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">1. Choose Format</label>
-                            <div className="flex gap-2">
-                                {(['post', 'story'] as const).map(f => (
-                                    <button
-                                        key={f}
-                                        onClick={() => setFormat(f)}
-                                        className={`flex-1 py-3 border-4 border-black font-black uppercase transition-all ${format === f ? 'bg-[#ff00ff] text-white shadow-[4px_4px_0px_0px_black]' : 'bg-gray-100'}`}
-                                    >
-                                        {f}
-                                    </button>
-                                ))}
-                            </div>
+                <div className="space-y-6">
+                    <div>
+                        <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">1. Choose Format</label>
+                        <div className="flex gap-2">
+                            {(['post', 'story'] as const).map(f => (
+                                <button
+                                    key={f}
+                                    onClick={() => setFormat(f)}
+                                    className={`flex-1 py-3 border-4 border-black font-black uppercase transition-all ${format === f ? 'bg-[#ff00ff] text-white shadow-[4px_4px_0px_0px_black]' : 'bg-gray-100'}`}
+                                >
+                                    {f}
+                                </button>
+                            ))}
                         </div>
-
-                        <div>
-                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">2. Content Type</label>
-                            <div className="flex gap-2">
-                                {(['coupon', 'event', 'merch'] as const).map(t => (
-                                    <button
-                                        key={t}
-                                        onClick={() => { setType(t); setSelectedId(''); }}
-                                        className={`flex-1 py-2 border-2 border-black font-black uppercase text-xs transition-all ${type === t ? 'bg-black text-[#d9ff36]' : 'bg-gray-100 opacity-60'}`}
-                                    >
-                                        {t}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">3. Select Item</label>
-                            <select
-                                value={selectedId}
-                                onChange={e => setSelectedId(e.target.value)}
-                                className="w-full border-4 border-black p-3 text-lg font-bold bg-white"
-                            >
-                                <option value="">-- Choose --</option>
-                                {items.map((item: any) => (
-                                    <option key={item.id} value={item.id}>
-                                        {type === 'coupon' ? item.code : type === 'event' ? `${item.city} (${item.date})` : item.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">4. Background Image (Gallery)</label>
-                            <select
-                                value={bgImageId}
-                                onChange={e => setBgImageId(e.target.value)}
-                                className="w-full border-4 border-black p-3 text-lg font-bold bg-white"
-                            >
-                                <option value="">-- No Background --</option>
-                                {data.gallery?.map((img: any) => (
-                                    <option key={img.id} value={img.id}>
-                                        Image #{img.id}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">5. Main Accent Color</label>
-                            <input
-                                type="color"
-                                value={bgColor}
-                                onChange={e => setBgColor(e.target.value)}
-                                className="w-full h-14 border-4 border-black cursor-pointer bg-white p-1"
-                            />
-                        </div>
-
-                        <button
-                            onClick={download}
-                            className="w-full bg-black text-[#d9ff36] py-5 text-2xl font-black uppercase hover:bg-[#ff00ff] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_black] transition-all shadow-[4px_4px_0px_0px_black]"
-                        >
-                            GET PROMO IMAGE
-                        </button>
                     </div>
-                </div>
 
-                <div className="bg-[#d9ff36] border-4 border-black p-4 italic font-black text-xs uppercase">
-                    PRO TIP: Choose "Story" for temporary hype and "Post" for your permanent grid, Bitch!
+                    <div>
+                        <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">2. Content Type</label>
+                        <div className="flex gap-2">
+                            {(['coupon', 'event', 'merch'] as const).map(t => (
+                                <button
+                                    key={t}
+                                    onClick={() => { setType(t); setSelectedId(''); }}
+                                    className={`flex-1 py-2 border-2 border-black font-black uppercase text-xs transition-all ${type === t ? 'bg-black text-[#d9ff36]' : 'bg-gray-100 opacity-60'}`}
+                                >
+                                    {t}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">3. Select Item</label>
+                        <select
+                            value={selectedId}
+                            onChange={e => setSelectedId(e.target.value)}
+                            className="w-full border-4 border-black p-3 text-lg font-bold bg-white"
+                        >
+                            <option value="">-- Choose --</option>
+                            {items.map((item: any) => (
+                                <option key={item.id} value={item.id}>
+                                    {type === 'coupon' ? item.code : type === 'event' ? `${item.city} (${item.date})` : item.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">4. Background Image (Gallery)</label>
+                        <select
+                            value={bgImageId}
+                            onChange={e => setBgImageId(e.target.value)}
+                            className="w-full border-4 border-black p-3 text-lg font-bold bg-white"
+                        >
+                            <option value="">-- No Background --</option>
+                            {data.gallery?.map((img: any) => (
+                                <option key={img.id} value={img.id}>
+                                    Image #{img.id}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-black uppercase mb-2 opacity-50 font-mono">5. Main Accent Color</label>
+                        <input
+                            type="color"
+                            value={bgColor}
+                            onChange={e => setBgColor(e.target.value)}
+                            className="w-full h-14 border-4 border-black cursor-pointer bg-white p-1"
+                        />
+                    </div>
+
+                    <button
+                        onClick={download}
+                        className="w-full bg-black text-[#d9ff36] py-5 text-2xl font-black uppercase hover:bg-[#ff00ff] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_black] transition-all shadow-[4px_4px_0px_0px_black]"
+                    >
+                        GET PROMO IMAGE
+                    </button>
                 </div>
             </div>
 
-            <div className="flex-1 w-full flex flex-col items-center">
-                <div className="md:sticky md:top-24 w-full flex flex-col items-center">
-                    <div className="mb-4 flex flex-wrap items-center justify-center gap-4">
-                        <span className="bg-black text-white px-3 py-1 text-xs font-black uppercase italic">Live Preview</span>
-                        <span className="opacity-40 text-xs font-mono">{format === 'post' ? '1080 x 1080 px' : '1080 x 1920 px'}</span>
-                    </div>
+            <div className="bg-[#d9ff36] border-4 border-black p-4 italic font-black text-xs uppercase">
+                PRO TIP: Choose "Story" for temporary hype and "Post" for your permanent grid, Bitch!
+            </div>
+        </div>
 
-                    <div className={`
+        <div className="flex-1 w-full flex flex-col items-center">
+            <div className="md:sticky md:top-24 w-full flex flex-col items-center">
+                <div className="mb-4 flex flex-wrap items-center justify-center gap-4">
+                    <span className="bg-black text-white px-3 py-1 text-xs font-black uppercase italic">Live Preview</span>
+                    <span className="opacity-40 text-xs font-mono">{format === 'post' ? '1080 x 1080 px' : '1080 x 1920 px'}</span>
+                </div>
+
+                <div className={`
                         relative border-[8px] md:border-[12px] border-black 
                         shadow-[15px_15px_0px_0px_rgba(0,0,0,0.1)] md:shadow-[30px_30px_0px_0px_rgba(0,0,0,0.1)] 
                         bg-gray-200 overflow-hidden flex items-center justify-center
                         ${format === 'story' ? 'aspect-[9/16] w-full max-w-[320px] md:max-w-[380px]' : 'aspect-square w-full max-w-[450px]'}
                     `}>
-                        <canvas
-                            ref={canvasRef}
-                            className="w-full h-full object-contain"
-                        />
-                    </div>
+                    <canvas
+                        ref={canvasRef}
+                        className="w-full h-full object-contain"
+                    />
                 </div>
             </div>
         </div>
-    );
+    </div>
+);
 }
 
 function ActivityTab({ items }: { items: any[] }) {
