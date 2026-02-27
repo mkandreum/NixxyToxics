@@ -942,6 +942,7 @@ function SettingsTab({ settings, onUpdate }: { settings: any, onUpdate: () => vo
     const [password, setPassword] = useState("");
     const [bgVideo, setBgVideo] = useState(settings.gallery_bg_video || "");
     const [logoUrl, setLogoUrl] = useState(settings.site_logo_url || "");
+    const [faviconUrl, setFaviconUrl] = useState(settings.site_favicon_url || "");
     const [heroImageUrl, setHeroImageUrl] = useState(settings.hero_image_url || "");
     const [instagramUrl, setInstagramUrl] = useState(settings.instagram_url || "");
 
@@ -1013,11 +1014,44 @@ function SettingsTab({ settings, onUpdate }: { settings: any, onUpdate: () => vo
         }
     };
 
+    const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const toastId = showToast("Converting to ICO...", "loading");
+        const formData = new FormData();
+        formData.append('favicon', file);
+        try {
+            const res = await toxicFetch('/api/settings/favicon', { method: 'POST', body: formData });
+            const data = await res.json();
+            setFaviconUrl(data.url);
+            onUpdate();
+            showToast("Favicon updated & converted!", "success");
+        } finally {
+            hideToast(toastId);
+        }
+    };
+
     return (
         <div className="max-w-2xl space-y-8">
             <div className="space-y-4">
                 <label className="block text-2xl uppercase font-black">Logo Text (Fallback)</label>
                 <input type="text" value={logoText} onChange={(e) => setLogoText(e.target.value)} className="w-full border-4 border-black p-4 text-2xl outline-none focus:bg-[#d9ff36]/10" />
+            </div>
+
+            <div className="space-y-4">
+                <label className="block text-2xl uppercase font-black">Favicon (Auto-converter to .ICO)</label>
+                <div className="border-4 border-black p-4 bg-gray-50 flex items-center justify-between gap-4">
+                    <div className="flex-1 flex items-center gap-4">
+                        {faviconUrl && <img src={faviconUrl} alt="Favicon Preview" className="h-8 w-8 object-contain border-2 border-black" />}
+                        <span className="truncate uppercase font-bold opacity-60">
+                            {faviconUrl ? "Favicon active (.ico)" : "No custom favicon"}
+                        </span>
+                    </div>
+                    <label className="bg-black text-[#d9ff36] px-4 py-2 uppercase font-black cursor-pointer hover:bg-[#ff00ff] transition-colors text-sm">
+                        <Upload size={16} className="inline mr-2" /> Upload Image
+                        <input type="file" className="hidden" accept="image/*" onChange={handleFaviconUpload} />
+                    </label>
+                </div>
             </div>
 
             <div className="space-y-4">

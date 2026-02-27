@@ -71,6 +71,24 @@ app.use('/uploads', express.static(uploadsDir, {
     }
 }));
 
+// Serve dynamic favicon
+app.get('/favicon.ico', (req, res) => {
+    const favicon = db.prepare('SELECT value FROM settings WHERE key = ?').get('site_favicon_url') as any;
+    if (favicon && favicon.value) {
+        const filePath = path.join(__dirname, '..', favicon.value);
+        if (fs.existsSync(filePath)) {
+            return res.sendFile(filePath);
+        }
+    }
+    // Default fallback from dist
+    const defaultFavicon = path.join(distPath, 'favicon.ico');
+    if (fs.existsSync(defaultFavicon)) {
+        res.sendFile(defaultFavicon);
+    } else {
+        res.sendStatus(404);
+    }
+});
+
 // --- AUTH ROUTES ---
 app.post('/api/login', (req, res) => {
     const { password } = req.body;
@@ -476,6 +494,50 @@ app.post('/api/settings/logo', authenticate, upload.single('logo'), (req, res) =
     const upsert = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
     upsert.run('site_logo_url', url);
     res.json({ url });
+});
+
+app.post('/api/settings/favicon', authenticate, upload.single('favicon'), async (req, res) => {
+    if (!req.file) return res.status(400).send('No file uploaded');
+
+    try {
+        // 1. Process with Sharp to 32x32 PNG
+        const pngBuffer = await sharp(req.file.buffer)
+            .resize(32, 32)
+            .png()
+            .toBuffer();
+
+        // 2. Wrap in ICO format
+        // ICO Header (6 bytes)
+        const header = Buffer.alloc(6);
+        header.writeUInt16LE(0, 0); // Reserved
+        header.writeUInt16LE(1, 2); // Type (1 = Icon)
+        header.writeUInt16LE(1, 4); // Count
+
+        // Directory Entry (16 bytes)
+        const entry = Buffer.alloc(16);
+        entry.writeUInt8(32, 0);    // Width
+        entry.writeUInt8(32, 1);    // Height
+        entry.writeUInt8(0, 2);     // Color count
+        entry.writeUInt8(0, 3);     // Reserved
+        entry.writeUInt16LE(1, 4);  // Planes
+        entry.writeUInt16LE(32, 6); // Bits per pixel
+        entry.writeUInt32LE(pngBuffer.length, 8); // Size
+        entry.writeUInt32LE(22, 12); // Offset (6+16)
+
+        const icoBuffer = Buffer.concat([header, entry, pngBuffer]);
+
+        const filename = `favicon-${Date.now()}.ico`;
+        const filepath = path.join(uploadsDir, filename);
+        fs.writeFileSync(filepath, icoBuffer);
+
+        const url = `/uploads/${filename}`;
+        const upsert = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
+        upsert.run('site_favicon_url', url);
+        res.json({ url });
+    } catch (err) {
+        console.error("Favicon conversion error:", err);
+        res.status(500).send('Error processing favicon');
+    }
 });
 
 // Banners
